@@ -2,7 +2,7 @@
 
 A modular resume-job description matching system using TF-IDF and cosine similarity.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone & Install
 ```bash
