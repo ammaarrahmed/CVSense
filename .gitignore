@@ -1,0 +1,55 @@
+# Environment variables and secrets
+.env
+kaggle.json
+
+# Kaggle downloaded data
+module_1_data_ingestion/temp_kaggle_data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data files (keep structure, not actual data)
+data/processed_resumes.csv
+data/processed_job_descriptions.csv
+module_1_data_ingestion/data_quality_report.json
+
+# Large datasets
+*.csv
+!requirements.txt

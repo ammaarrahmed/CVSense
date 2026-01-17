@@ -2,6 +2,26 @@
 
 A modular resume-job description matching system using TF-IDF and cosine similarity.
 
+## 🚀 Quick Start
+
+1. **Clone the repository**
+2. **Set up Kaggle API credentials** - See [SETUP_KAGGLE_API.md](SETUP_KAGGLE_API.md)
+3. **Install dependencies:** `pip install -r requirements.txt`
+4. **Run Module 1:** Open `module_1_data_ingestion/data_ingestion.ipynb`
+
+## 🔐 Important: API Security
+
+This project requires Kaggle API credentials to download datasets. **Your credentials are private!**
+
+- ✅ Copy `.env.example` to `.env` and add your credentials
+- ✅ `.env` is in `.gitignore` (never committed to git)
+- ✅ Each team member uses their own API key
+- ❌ Never commit `kaggle.json` or `.env` files
+
+**See [SETUP_KAGGLE_API.md](SETUP_KAGGLE_API.md) for detailed setup instructions.**
+
+---
+
 ## Project Structure
 
 ### Module 1: Data Ingestion & Resume Handling

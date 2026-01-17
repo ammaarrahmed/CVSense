@@ -1,0 +1,52 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║          HOW TO ADD YOUR KAGGLE API KEY (2 MINUTES)                     ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+STEP 1: GET YOUR API KEY
+────────────────────────
+1. Go to: https://www.kaggle.com/account
+2. Scroll to "API" section
+3. Click "Create New API Token"
+4. Downloads: kaggle.json
+
+STEP 2: OPEN THE DOWNLOADED FILE
+─────────────────────────────────
+Open kaggle.json - it looks like:
+{
+  "username": "johndoe",
+  "key": "abc123xyz456..."
+}
+
+STEP 3: CREATE .env FILE
+────────────────────────
+In the CVSense folder, run:
+$ cp .env.example .env
+
+STEP 4: EDIT .env FILE
+──────────────────────
+Open .env and replace the placeholder values:
+
+BEFORE:
+KAGGLE_USERNAME=your_kaggle_username_here
+KAGGLE_KEY=your_kaggle_api_key_here
+
+AFTER (example):
+KAGGLE_USERNAME=johndoe
+KAGGLE_KEY=abc123xyz456...
+
+STEP 5: SAVE AND YOU'RE DONE!
+─────────────────────────────
+✅ Your credentials are now configured
+✅ The .env file is in .gitignore (won't be committed)
+✅ Run the notebook - it will use your credentials
+
+═══════════════════════════════════════════════════════════════════════════
+
+IMPORTANT:
+• NEVER commit the .env file to git
+• NEVER share your API key publicly
+• Each team member needs their own .env file
+
+FOR DETAILED GUIDE: See SETUP_KAGGLE_API.md
+
+═══════════════════════════════════════════════════════════════════════════
