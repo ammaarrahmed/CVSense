@@ -1,0 +1,8 @@
+Title: Cloud Architect
+Category: Cloud Computing
+
+Description:
+Seeking experienced Cloud Architect to design scalable cloud solutions. 
+        You will define architecture patterns, security standards, and migration strategies. 
+        Required skills: AWS/Azure/GCP, cloud architecture patterns, security best practices, 
+        infrastructure as code, networking, and cost optimization. Relevant certifications preferred.

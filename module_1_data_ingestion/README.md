@@ -117,15 +117,16 @@ All resumes must meet these criteria to be marked as valid:
 
 ### Quick Start
 
-1. **Install Dependencies:**
+1. **Setup Kaggle API:**
    ```bash
-   pip install -r ../requirements.txt
+   cd /home/ammaar/CODE/CVSense
+   cp .env.example .env
+   # Edit .env with your Kaggle credentials from https://www.kaggle.com/account
    ```
 
-2. **Setup Kaggle API (Optional for custom datasets):**
+2. **Install Dependencies:**
    ```bash
-   # Place your kaggle.json in ~/.kaggle/
-   # Or follow prompts in the notebook
+   pip install -r ../requirements.txt
    ```
 
 3. **Run the Notebook:**
@@ -138,23 +139,19 @@ All resumes must meet these criteria to be marked as valid:
    - Data files in `../data/`
    - Quality report in `data_quality_report.json`
 
-### For Other Team Members
-
-If you're implementing Module 2, 3, 4, or 5:
+### For Other Team Members (Modules 2-5)
 
 ```python
 import pandas as pd
 
-# Load the processed data
+# Load the processed data from Module 1
 resumes_df = pd.read_csv('../data/processed_resumes.csv')
 jobs_df = pd.read_csv('../data/processed_job_descriptions.csv')
 
 # Use only valid resumes
 valid_resumes = resumes_df[resumes_df['is_valid'] == True]
 
-# Access cleaned text
-resume_texts = valid_resumes['cleaned_resume'].tolist()
-job_texts = jobs_df['cleaned_description'].tolist()
+# Your preprocessing/feature extraction code here
 ```
 
 ---
@@ -285,10 +282,9 @@ For questions about:
 - **Data format:** Check `DATA_FORMAT_SPECIFICATION.md`
 - **Quality issues:** Review `data_quality_report.json`
 - **Implementation details:** See `data_ingestion.ipynb`
-- **Module 1 specific questions:** Contact Person 1
-
----
-
-**Last Updated:** January 17, 2026  
+- **Module 1 specif Module 1:
+- **Data format:** Check `DATA_FORMAT_SPECIFICATION.md`
+- **Quality issues:** Review `data_quality_report.json`
+- **Implementation:** See `data_ingestion.ipynb`
 **Version:** 1.0  
 **Status:** Production Ready ✅

@@ -1,0 +1,9 @@
+Title: Machine Learning Engineer
+Category: Data Science
+
+Description:
+Seeking Machine Learning Engineer to develop and deploy ML models at scale. 
+        Responsibilities include model training, optimization, and productionization. Required skills: 
+        Python, deep learning frameworks (TensorFlow/PyTorch), MLOps, Docker, Kubernetes, and 
+        experience with large-scale datasets. Knowledge of NLP and computer vision is a plus. 
+        PhD or Masters in Computer Science or related field preferred.

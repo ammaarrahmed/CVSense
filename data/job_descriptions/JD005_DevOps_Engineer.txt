@@ -1,0 +1,8 @@
+Title: DevOps Engineer
+Category: DevOps
+
+Description:
+Looking for DevOps Engineer to manage our cloud infrastructure and CI/CD pipelines. 
+        Responsibilities include automation, monitoring, and ensuring system reliability. Required skills: 
+        Linux, Docker, Kubernetes, Jenkins/GitLab CI, AWS/Azure, Terraform, scripting (Python/Bash), 
+        and networking fundamentals. Experience with monitoring tools (Prometheus, Grafana) preferred.

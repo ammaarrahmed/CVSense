@@ -1,0 +1,10 @@
+Title: Senior Data Scientist
+Category: Data Science
+
+Description:
+We are seeking a Senior Data Scientist to join our AI team. 
+        The ideal candidate will have strong experience in machine learning, statistical analysis, 
+        and Python programming. Responsibilities include developing predictive models, conducting 
+        A/B testing, and presenting insights to stakeholders. Required skills: Python, SQL, 
+        TensorFlow/PyTorch, scikit-learn, pandas, statistics, and data visualization. 
+        Experience with cloud platforms (AWS/GCP) is a plus.

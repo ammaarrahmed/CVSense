@@ -1,0 +1,8 @@
+Title: Backend Developer
+Category: Software Engineering
+
+Description:
+We are hiring a Backend Developer to build robust server-side applications. 
+        You will design APIs, optimize databases, and ensure system scalability. Required skills: 
+        Java/Python/Node.js, RESTful API design, databases (SQL and NoSQL), microservices architecture, 
+        caching (Redis), and message queues. Experience with distributed systems is a plus.

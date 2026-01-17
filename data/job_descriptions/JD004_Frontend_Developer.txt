@@ -1,0 +1,9 @@
+Title: Frontend Developer
+Category: Web Development
+
+Description:
+We need a creative Frontend Developer to build beautiful user interfaces. 
+        You will work with designers to implement responsive web applications. Required skills: 
+        HTML5, CSS3, JavaScript, React or Vue.js, responsive design, cross-browser compatibility, 
+        and version control (Git). Experience with TypeScript, testing frameworks, and UI/UX 
+        principles is highly valued.

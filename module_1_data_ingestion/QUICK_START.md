@@ -9,15 +9,9 @@
 ### Step 1: Set Up Kaggle API Credentials
 ```bash
 cd /home/ammaar/CODE/CVSense
-
-# Copy the example environment file
 cp .env.example .env
-
-# Edit .env and add your Kaggle credentials
-# Get them from: https://www.kaggle.com/account
+# Edit .env - add your username and API key from https://www.kaggle.com/account
 ```
-
-**Detailed instructions:** See [SETUP_KAGGLE_API.md](../SETUP_KAGGLE_API.md)
 
 ### Step 2: Install Dependencies
 ```bash
@@ -81,20 +75,13 @@ MIN_ALPHA_RATIO = 0.5          # Validation: minimum alphabetic ratio
 ## 🐛 Common Issues
 
 ### 1. Kaggle Authentication Error
-**Error:** "Could not authenticate with Kaggle" or "Kaggle credentials not found"
+**Error:** "Could not authenticate with Kaggle"
 
-**Fix:** Follow the setup guide: [SETUP_KAGGLE_API.md](../SETUP_KAGGLE_API.md)
-
-**Quick fix:**
+**Fix:**
 ```bash
-# Option 1: Create .env file
+# Create .env file and add your credentials
 cp .env.example .env
-# Then edit .env with your credentials
-
-# Option 2: System-wide setup
-mkdir -p ~/.kaggle
-mv ~/Downloads/kaggle.json ~/.kaggle/
-chmod 600 ~/.kaggle/kaggle.json
+# Edit .env with your Kaggle username and API key from https://www.kaggle.com/account
 ```
 
 ### 2. Import Error

@@ -1,0 +1,8 @@
+Title: QA Automation Engineer
+Category: Quality Assurance
+
+Description:
+We need QA Automation Engineer to build and maintain test automation frameworks. 
+        You will design test strategies and ensure product quality. Required skills: Test automation 
+        (Selenium/Cypress), programming (Python/Java), API testing, CI/CD integration, test frameworks, 
+        and bug tracking tools. Experience with performance and security testing is a plus.

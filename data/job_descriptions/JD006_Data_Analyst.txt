@@ -1,0 +1,8 @@
+Title: Data Analyst
+Category: Data Science
+
+Description:
+Seeking Data Analyst to transform data into actionable insights. You will create 
+        dashboards, perform statistical analysis, and support business decision-making. Required skills: 
+        SQL, Excel, Python/R, data visualization (Tableau/Power BI), statistical analysis, and 
+        business intelligence. Strong analytical thinking and communication skills essential.

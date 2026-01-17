@@ -1,0 +1,8 @@
+Title: Mobile App Developer
+Category: Mobile Development
+
+Description:
+Looking for Mobile App Developer to create native mobile applications. 
+        You will develop features for iOS and Android platforms. Required skills: Swift/Kotlin, 
+        mobile UI/UX patterns, RESTful APIs, local databases, push notifications, and app store 
+        deployment. Experience with React Native or Flutter is beneficial.

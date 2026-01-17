@@ -1,0 +1,9 @@
+Title: Full Stack Software Engineer
+Category: Software Engineering
+
+Description:
+Looking for a Full Stack Software Engineer to build scalable web applications. 
+        You will work on both frontend and backend development using modern technologies. 
+        Required skills: JavaScript, React, Node.js, RESTful APIs, databases (PostgreSQL/MongoDB), 
+        Git, and Agile methodologies. Experience with cloud deployment and CI/CD pipelines preferred. 
+        Strong problem-solving and communication skills required.

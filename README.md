@@ -4,21 +4,38 @@ A modular resume-job description matching system using TF-IDF and cosine similar
 
 ## 🚀 Quick Start
 
-1. **Clone the repository**
-2. **Set up Kaggle API credentials** - See [SETUP_KAGGLE_API.md](SETUP_KAGGLE_API.md)
-3. **Install dependencies:** `pip install -r requirements.txt`
-4. **Run Module 1:** Open `module_1_data_ingestion/data_ingestion.ipynb`
+### 1. Clone & Install
+```bash
+git clone <repo-url>
+cd CVSense
+pip install -r requirements.txt
+```
 
-## 🔐 Important: API Security
+### 2. Set Up Kaggle API (Required for data download)
+```bash
+# Copy template
+cp .env.example .env
 
-This project requires Kaggle API credentials to download datasets. **Your credentials are private!**
+# Get your Kaggle API credentials:
+# 1. Go to https://www.kaggle.com/account
+# 2. Click "Create New API Token" (downloads kaggle.json)
+# 3. Open kaggle.json and copy username & key values
+# 4. Paste them into .env file
+```
 
-- ✅ Copy `.env.example` to `.env` and add your credentials
-- ✅ `.env` is in `.gitignore` (never committed to git)
-- ✅ Each team member uses their own API key
-- ❌ Never commit `kaggle.json` or `.env` files
+**Your `.env` file should look like:**
+```
+KAGGLE_USERNAME=your_username
+KAGGLE_KEY=abc123def456...
+```
 
-**See [SETUP_KAGGLE_API.md](SETUP_KAGGLE_API.md) for detailed setup instructions.**
+**Note:** `.env` is in `.gitignore` - your credentials stay private!
+
+### 3. Run Module 1
+```bash
+jupyter notebook module_1_data_ingestion/data_ingestion.ipynb
+# Or open in VS Code
+```
 
 ---
 
