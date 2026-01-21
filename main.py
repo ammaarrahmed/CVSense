@@ -77,58 +77,20 @@ class CVSensePipeline:
         
     def run_module_2(self):
         """Run text preprocessing (Module 2)"""
-        from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-        import nltk
-        from nltk.tokenize import word_tokenize
-        from nltk.stem import WordNetLemmatizer
+        from module_2_text_preprocessing import preprocess_resumes, preprocess_jobs, ensure_nltk_data
         
         print("📥 Loading raw data from Module 1...")
         resumes_df = pd.read_csv(self.files['raw_resumes'])
         jobs_df = pd.read_csv(self.files['raw_jobs'])
         
-        # Download NLTK resources if needed
-        try:
-            nltk.data.find('tokenizers/punkt')
-        except LookupError:
-            print("📦 Downloading NLTK punkt tokenizer...")
-            nltk.download('punkt', quiet=True)
-            
-        try:
-            nltk.data.find('corpora/wordnet')
-        except LookupError:
-            print("📦 Downloading NLTK wordnet...")
-            nltk.download('wordnet', quiet=True)
-            
-        try:
-            nltk.data.find('tokenizers/punkt_tab')
-        except LookupError:
-            print("📦 Downloading NLTK punkt_tab...")
-            nltk.download('punkt_tab', quiet=True)
+        # Ensure NLTK data is available
+        ensure_nltk_data()
         
-        def clean_text(text):
-            """Phase A: Text cleaning"""
-            import re
-            text = str(text).lower()
-            text = re.sub(r'\d+', '', text)  # Remove numbers
-            text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
-            text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
-            return text.strip()
+        print("🧹 Preprocessing text (cleaning + linguistic processing)...")
         
-        def preprocess_text(text):
-            """Phase B: Linguistic preprocessing"""
-            lemmatizer = WordNetLemmatizer()
-            tokens = word_tokenize(text)
-            tokens = [word for word in tokens if word not in ENGLISH_STOP_WORDS and len(word) > 2]
-            tokens = [lemmatizer.lemmatize(word) for word in tokens]
-            return ' '.join(tokens)
-        
-        print("🧹 Phase A: Cleaning text...")
-        resumes_df['cleaned_text'] = resumes_df['cleaned_resume'].apply(clean_text)
-        jobs_df['cleaned_text'] = jobs_df['cleaned_description'].apply(clean_text)
-        
-        print("🔤 Phase B: Linguistic preprocessing (tokenization, stopwords, lemmatization)...")
-        resumes_df['preprocessed_text'] = resumes_df['cleaned_text'].apply(preprocess_text)
-        jobs_df['preprocessed_text'] = jobs_df['cleaned_text'].apply(preprocess_text)
+        # Use module functions
+        resumes_df = preprocess_resumes(resumes_df, text_column='cleaned_resume')
+        jobs_df = preprocess_jobs(jobs_df, text_column='cleaned_description')
         
         # Save outputs
         self.preprocessed_dir.mkdir(parents=True, exist_ok=True)
@@ -140,7 +102,7 @@ class CVSensePipeline:
         
     def run_module_3(self):
         """Run TF-IDF vectorization (Module 3)"""
-        from sklearn.feature_extraction.text import TfidfVectorizer
+        from module_3_feature_extraction import create_tfidf_vectors, save_tfidf_vectors
         
         print("📥 Loading preprocessed data from Module 2...")
         resumes_df = pd.read_csv(self.files['preprocessed_resumes'])
@@ -151,82 +113,72 @@ class CVSensePipeline:
         job_texts = jobs_df['preprocessed_text'].astype(str).tolist()
         
         print("🔢 Creating TF-IDF vectors...")
-        # Combine corpus for consistent vocabulary
-        all_texts = resume_texts + job_texts
         
-        # Initialize and fit vectorizer
-        vectorizer = TfidfVectorizer(
+        # Use module function
+        result = create_tfidf_vectors(
+            resume_texts=resume_texts,
+            job_texts=job_texts,
             max_features=5000,
             ngram_range=(1, 2),
-            stop_words='english'
+            use_idf=True  # Use IDF for large corpus
         )
         
-        tfidf_matrix = vectorizer.fit_transform(all_texts)
-        
-        # Split back into resumes and jobs
-        resume_vectors = tfidf_matrix[:len(resume_texts)]  # type: ignore
-        job_vectors = tfidf_matrix[len(resume_texts):]  # type: ignore
-        
         # Save output
-        output_data = {
-            'resume_vectors': resume_vectors,
-            'jd_vectors': job_vectors,
-            'feature_names': vectorizer.get_feature_names_out()
-        }
+        save_tfidf_vectors(
+            output_path=str(self.files['tfidf_vectors']),
+            resume_vectors=result['resume_vectors'],
+            job_vectors=result['jd_vectors'],
+            feature_names=result['feature_names']
+        )
         
-        with open(self.files['tfidf_vectors'], 'wb') as f:
-            pickle.dump(output_data, f)
-        
-        print(f"✅ Created TF-IDF vectors: {resume_vectors.shape[0]} resumes × {resume_vectors.shape[1]} features")
-        print(f"✅ Created TF-IDF vectors: {job_vectors.shape[0]} jobs × {job_vectors.shape[1]} features")
+        print(f"✅ Created TF-IDF vectors: {result['resume_vectors'].shape[0]} resumes × {result['resume_vectors'].shape[1]} features")
+        print(f"✅ Created TF-IDF vectors: {result['jd_vectors'].shape[0]} jobs × {result['jd_vectors'].shape[1]} features")
         print(f"📁 Saved to: {self.files['tfidf_vectors']}")
         
     def run_module_4(self):
         """Run similarity ranking (Module 4)"""
-        from sklearn.metrics.pairwise import cosine_similarity
+        from module_3_feature_extraction import load_tfidf_vectors
+        from module_4_similarity_ranking import compute_hybrid_scores, rank_resumes
         
         print("📥 Loading TF-IDF vectors from Module 3...")
-        with open(self.files['tfidf_vectors'], 'rb') as f:
-            tfidf_data = pickle.load(f)
+        tfidf_data = load_tfidf_vectors(str(self.files['tfidf_vectors']))
         
         job_vectors = tfidf_data['jd_vectors']
         resume_vectors = tfidf_data['resume_vectors']
         
-        print(f"📊 Computing cosine similarity...")
-        similarity_matrix = cosine_similarity(job_vectors, resume_vectors)
+        # Load preprocessed texts for keyword matching
+        print("📥 Loading preprocessed texts for hybrid scoring...")
+        resumes_df = pd.read_csv(self.files['preprocessed_resumes'])
+        jobs_df = pd.read_csv(self.files['preprocessed_jobs'])
+        
+        resume_texts = resumes_df['preprocessed_text'].astype(str).tolist()
+        job_texts = jobs_df['preprocessed_text'].astype(str).tolist()
+        
+        print(f"📊 Computing hybrid similarity scores (70% keyword + 30% TF-IDF)...")
+        
+        # Use hybrid scoring for better results
+        similarity_matrix = compute_hybrid_scores(
+            job_texts=job_texts,
+            resume_texts=resume_texts,
+            job_vectors=job_vectors,
+            resume_vectors=resume_vectors,
+            keyword_weight=0.7,
+            tfidf_weight=0.3
+        )
+        
         print(f"   Matrix shape: {similarity_matrix.shape} (jobs × resumes)")
         
-        # Rank resumes for each job
+        # Rank resumes
         top_n = 5
-        ranking_results = {}
-        
-        for job_idx in range(similarity_matrix.shape[0]):
-            scores = similarity_matrix[job_idx]
-            ranked_indices = np.argsort(scores)[::-1]  # Descending order
-            top_resumes = ranked_indices[:top_n]
-            top_scores = scores[top_resumes]
-            
-            ranking_results[f"Job_{job_idx+1}"] = {
-                "Resume_IDs": top_resumes,
-                "Similarity_Scores": top_scores
-            }
-        
-        # Convert to DataFrame
-        df_results = pd.DataFrame([
-            {
-                "Job": job,
-                "Rank": i + 1,
-                "Resume_ID": rid,
-                "Similarity_Score": score
-            }
-            for job, data in ranking_results.items()
-            for i, (rid, score) in enumerate(zip(data["Resume_IDs"], data["Similarity_Scores"]))
-        ])
+        df_results = rank_resumes(
+            similarity_matrix=similarity_matrix,
+            top_n=top_n
+        )
         
         # Save rankings
         df_results.to_csv(self.files['rankings'], index=False)
         
-        print(f"✅ Ranked top {top_n} resumes for {len(ranking_results)} job descriptions")
+        print(f"✅ Ranked top {top_n} resumes for {similarity_matrix.shape[0]} job descriptions")
         print(f"📁 Saved to: {self.files['rankings']}")
         
         # Show sample rankings
