@@ -7,10 +7,8 @@ pdfplumber>=0.9.0
 # NLP & Text Processing
 nltk>=3.8.0
 spacy>=3.5.0
-string # (built-in, no installation needed)
-re # (built-in, no installation needed)
 
-# Feature Extraction
+# Feature Extraction & ML
 scikit-learn>=1.3.0
 
 # Data Processing
@@ -23,3 +21,11 @@ kaggle>=1.5.16
 
 # Utilities
 python-dotenv>=1.0.0
+
+# Web Interface
+streamlit>=1.29.0
+plotly>=5.18.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0

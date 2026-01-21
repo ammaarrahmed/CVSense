@@ -1,0 +1,12 @@
+[general]python-version = "3.12"
+
+
+
+
+
+
+
+
+
+
+gatherUsageStats = false[browser]enableCORS = falseport = 8501headless = true[server]email = ""
