@@ -705,15 +705,15 @@ class CVSenseApp:
         def clean_text(text):
             text = str(text).lower()
             # DON'T remove numbers - preserves esp32, n8n, python3, etc.
-            text = re.sub(r'[^\w\s]', '', text)
+            text = re.sub(r'[^\w\s]', ' ', text)  # Replace punctuation with space
             text = re.sub(r'\s+', ' ', text)
             return text.strip()
         
         def preprocess_text(text):
-            lemmatizer = WordNetLemmatizer()
-            tokens = word_tokenize(text)
-            tokens = [word for word in tokens if word not in ENGLISH_STOP_WORDS and len(word) > 2]
-            tokens = [lemmatizer.lemmatize(word) for word in tokens]
+            # Simple tokenization - keep it minimal to avoid losing keywords
+            tokens = text.split()
+            # Only filter very short tokens (keep AI, ML, UI, etc.)
+            tokens = [word for word in tokens if len(word) > 1]
             return ' '.join(tokens)
         
         # Process resumes
@@ -732,7 +732,10 @@ class CVSenseApp:
         vectorizer = TfidfVectorizer(
             max_features=5000,
             ngram_range=(1, 2),
-            stop_words='english'
+            stop_words='english',
+            use_idf=False,  # Disable IDF - doesn't work well with small corpus
+            norm='l2',
+            sublinear_tf=False
         )
         
         tfidf_matrix = vectorizer.fit_transform(all_texts)
