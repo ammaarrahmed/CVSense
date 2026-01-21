@@ -743,8 +743,46 @@ class CVSenseApp:
         resume_vectors = tfidf_matrix[:len(resume_texts)]  # type: ignore
         job_vectors = tfidf_matrix[len(resume_texts):]  # type: ignore
         
-        # Compute similarity
-        similarity_matrix = cosine_similarity(job_vectors, resume_vectors)
+        # Compute TF-IDF cosine similarity
+        tfidf_similarity = cosine_similarity(job_vectors, resume_vectors)
+        
+        # KEYWORD MATCHING (like Jobscan)
+        def keyword_match_score(job_text, resume_text):
+            """Calculate keyword overlap percentage"""
+            job_words = set(job_text.lower().split())
+            resume_words = set(resume_text.lower().split())
+            
+            # Filter to meaningful keywords (remove very common words)
+            common_words = {'the', 'a', 'an', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been', 
+                           'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+                           'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used',
+                           'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into',
+                           'through', 'during', 'before', 'after', 'above', 'below', 'between',
+                           'this', 'that', 'these', 'those', 'it', 'its', 'we', 'our', 'you', 'your',
+                           'they', 'their', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
+                           'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
+                           'than', 'too', 'very', 'just', 'also', 'now', 'here', 'there', 'when',
+                           'where', 'why', 'how', 'what', 'which', 'who', 'whom', 'if', 'then', 'else',
+                           'any', 'about', 'over', 'under', 'again', 'further', 'once', 'including'}
+            
+            job_keywords = {w for w in job_words if len(w) > 2 and w not in common_words}
+            resume_keywords = {w for w in resume_words if len(w) > 2 and w not in common_words}
+            
+            if not job_keywords:
+                return 0.0
+            
+            # How many job keywords are found in resume?
+            matched = job_keywords.intersection(resume_keywords)
+            return len(matched) / len(job_keywords)
+        
+        # Calculate hybrid scores
+        keyword_scores = np.zeros_like(tfidf_similarity)
+        for job_idx, job_text in enumerate(job_texts):
+            for resume_idx, resume_text in enumerate(resume_texts):
+                keyword_scores[job_idx, resume_idx] = keyword_match_score(job_text, resume_text)
+        
+        # Combine: 70% keyword match + 30% TF-IDF (keyword matching is more intuitive)
+        similarity_matrix = 0.7 * keyword_scores + 0.3 * tfidf_similarity
         
         # Create rankings
         top_n = 5
