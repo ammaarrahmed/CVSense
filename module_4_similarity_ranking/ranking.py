@@ -41,6 +41,49 @@ TECH_PHRASES = [
     'embedded systems', 'prompt engineering', 'workflow automation'
 ]
 
+# Synonyms and abbreviations - maps variations to canonical form
+SYNONYMS = {
+    # AI/ML abbreviations
+    'ml': 'machine learning', 'machine learning': 'ml',
+    'ai': 'artificial intelligence', 'artificial intelligence': 'ai',
+    'dl': 'deep learning', 'deep learning': 'dl',
+    'nlp': 'natural language processing', 'natural language processing': 'nlp',
+    'cv': 'computer vision', 'computer vision': 'cv',
+    'llm': 'large language model', 'large language model': 'llm',
+    'genai': 'generative ai', 'generative ai': 'genai',
+    'nn': 'neural network', 'neural network': 'nn',
+    
+    # Programming languages
+    'js': 'javascript', 'javascript': 'js',
+    'ts': 'typescript', 'typescript': 'ts',
+    'py': 'python', 'python': 'py',
+    
+    # Frameworks/tools
+    'react': 'reactjs', 'reactjs': 'react',
+    'node': 'nodejs', 'nodejs': 'node',
+    'tf': 'tensorflow', 'tensorflow': 'tf',
+    'k8s': 'kubernetes', 'kubernetes': 'k8s',
+    'aws': 'amazon web services',
+    'gcp': 'google cloud platform', 'google cloud': 'gcp',
+    
+    # Common terms
+    'api': 'apis', 'apis': 'api',
+    'db': 'database', 'database': 'db',
+    'sql': 'structured query language',
+    'nosql': 'non relational database',
+    'oop': 'object oriented programming',
+    'ci/cd': 'continuous integration', 'cicd': 'ci cd',
+}
+
+
+def expand_with_synonyms(keywords: Set[str]) -> Set[str]:
+    """Expand keywords with their synonyms/abbreviations."""
+    expanded = set(keywords)
+    for word in keywords:
+        if word in SYNONYMS:
+            expanded.add(SYNONYMS[word])
+    return expanded
+
 
 def extract_keywords(text: str, min_length: int = 2) -> Set[str]:
     """
@@ -75,6 +118,7 @@ def keyword_match_score(job_text: str, resume_text: str) -> float:
     This is similar to how Jobscan calculates match scores:
     - Extract keywords from job description
     - Check what percentage appear in resume
+    - Expand with synonyms/abbreviations for better matching
     - Also match technical phrases for bonus
     
     Args:
@@ -90,9 +134,13 @@ def keyword_match_score(job_text: str, resume_text: str) -> float:
     if not job_keywords:
         return 0.0
     
-    # Word-level matching
-    matched_words = job_keywords.intersection(resume_keywords)
-    word_score = len(matched_words) / len(job_keywords)
+    # Expand both with synonyms for better matching
+    job_expanded = expand_with_synonyms(job_keywords)
+    resume_expanded = expand_with_synonyms(resume_keywords)
+    
+    # Word-level matching (using expanded sets)
+    matched_words = job_expanded.intersection(resume_expanded)
+    word_score = len(matched_words) / len(job_expanded)
     
     # Phrase-level matching (bonus for matching technical phrases)
     job_phrases = extract_phrases(job_text)
@@ -105,7 +153,6 @@ def keyword_match_score(job_text: str, resume_text: str) -> float:
         phrase_score = 0.0
     
     # Combined score: 70% word matching + 30% phrase matching
-    # Phrases are valuable so they boost the score
     combined_score = 0.7 * word_score + 0.3 * phrase_score
     
     # Boost if we have phrase matches (they indicate strong relevance)
