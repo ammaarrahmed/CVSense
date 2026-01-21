@@ -139,7 +139,7 @@ similarity = (A · B) / (||A|| × ||B||)
 
 **Purpose:** Analyze and validate ranking quality
 
-**Script:** `Evaluation_Metrics_Pipeline.py`
+**Script:** `module_5_evaluation_documentation/Evaluation_Metrics_Pipeline.py`
 
 **Metrics Computed:**
 1. **Score Statistics:**

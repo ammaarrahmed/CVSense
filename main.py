@@ -249,7 +249,7 @@ class CVSensePipeline:
             return
         
         # Import evaluation function here to avoid early import errors
-        from Evaluation_Metrics_Pipeline import run_evaluation
+        from module_5_evaluation_documentation.Evaluation_Metrics_Pipeline import run_evaluation
         
         # Change to project root for evaluation script
         original_dir = os.getcwd()
