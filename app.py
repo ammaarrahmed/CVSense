@@ -704,7 +704,7 @@ class CVSenseApp:
         # Preprocessing functions
         def clean_text(text):
             text = str(text).lower()
-            text = re.sub(r'\d+', '', text)
+            # DON'T remove numbers - preserves esp32, n8n, python3, etc.
             text = re.sub(r'[^\w\s]', '', text)
             text = re.sub(r'\s+', ' ', text)
             return text.strip()
