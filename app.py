@@ -66,9 +66,17 @@ class CVSenseApp:
     def load_data(self):
         """Load all necessary data files"""
         try:
-            # Raw data
-            self.raw_resumes = pd.read_csv(self.data_dir / 'processed_resumes.csv')
-            self.raw_jobs = pd.read_csv(self.data_dir / 'processed_job_descriptions.csv')
+            # Raw data - try processed files first, fallback to preprocessed
+            if (self.data_dir / 'processed_resumes.csv').exists():
+                self.raw_resumes = pd.read_csv(self.data_dir / 'processed_resumes.csv')
+                self.raw_jobs = pd.read_csv(self.data_dir / 'processed_job_descriptions.csv')
+            elif (self.preprocessed_dir / 'preprocessed_resumes_final.csv').exists():
+                # Use preprocessed files as raw data if processed files don't exist
+                self.raw_resumes = pd.read_csv(self.preprocessed_dir / 'preprocessed_resumes_final.csv')
+                self.raw_jobs = pd.read_csv(self.preprocessed_dir / 'preprocessed_jobs_final.csv')
+            else:
+                self.raw_resumes = None
+                self.raw_jobs = None
             
             # Preprocessed data
             if (self.preprocessed_dir / 'preprocessed_resumes_final.csv').exists():
@@ -94,8 +102,13 @@ class CVSenseApp:
                 self.tfidf_data = None
                 
         except Exception as e:
-            st.error(f"Error loading data: {str(e)}")
-            st.info("Please run the main pipeline first: `python main.py`")
+            st.warning(f"Some data files are missing. Upload & Process page will be available for custom processing.")
+            self.raw_resumes = None
+            self.raw_jobs = None
+            self.preprocessed_resumes = None
+            self.preprocessed_jobs = None
+            self.rankings = None
+            self.tfidf_data = None
     
     def render_sidebar(self):
         """Render sidebar navigation"""
@@ -147,16 +160,22 @@ class CVSenseApp:
         st.markdown("### 🎯 Quick Overview")
         
         if self.rankings is None:
-            st.warning("⚠️ Pipeline not run yet. Please execute: `python main.py`")
+            st.info("👋 Welcome to CVSense! No pre-processed data available.")
+            st.markdown("""
+            **Get Started:**
+            - Use the **⬆️ Upload & Process** page to upload resumes and job descriptions
+            - The system will automatically process and rank candidates
+            - Or run the full pipeline locally: `python main.py`
+            """)
             return
         
         # Metrics row
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("Total Resumes", len(self.raw_resumes))
+            st.metric("Total Resumes", len(self.raw_resumes) if self.raw_resumes is not None else 0)
         with col2:
-            st.metric("Job Positions", len(self.raw_jobs))
+            st.metric("Job Positions", len(self.raw_jobs) if self.raw_jobs is not None else 0)
         with col3:
             avg_score = self.rankings['Similarity_Score'].mean()
             st.metric("Avg Match Score", f"{avg_score:.2%}")
@@ -261,7 +280,11 @@ class CVSenseApp:
         
         for _, row in job_rankings.iterrows():
             resume_id = int(row['Resume_ID'])
-            resume_data = self.raw_resumes.iloc[resume_id]
+            if self.raw_resumes is not None and resume_id < len(self.raw_resumes):
+                resume_data = self.raw_resumes.iloc[resume_id]
+            else:
+                resume_data = pd.Series({'Category': 'N/A', 'ID': resume_id, 'cleaned_resume': 'N/A', 'Resume_str': 'N/A'})
+            
             score = row['Similarity_Score']
             
             # Score color
@@ -326,9 +349,12 @@ class CVSenseApp:
         resume_avg_scores = resume_avg_scores.sort_values('mean', ascending=False).head(10)
         
         # Add category information
-        resume_avg_scores['Category'] = resume_avg_scores['Resume_ID'].apply(
-            lambda x: self.raw_resumes.iloc[int(x)].get('Category', 'N/A') if int(x) < len(self.raw_resumes) else 'N/A'
-        )
+        if self.raw_resumes is not None:
+            resume_avg_scores['Category'] = resume_avg_scores['Resume_ID'].apply(
+                lambda x: self.raw_resumes.iloc[int(x)].get('Category', 'N/A') if int(x) < len(self.raw_resumes) else 'N/A'
+            )
+        else:
+            resume_avg_scores['Category'] = 'N/A'
         
         fig = px.bar(
             resume_avg_scores,
@@ -341,7 +367,7 @@ class CVSenseApp:
         st.plotly_chart(fig, width='stretch')
         
         # Category analysis
-        if 'Category' in self.raw_resumes.columns:
+        if self.raw_resumes is not None and 'Category' in self.raw_resumes.columns:
             st.markdown("### 📂 Performance by Resume Category")
             
             # Merge rankings with resume categories
@@ -367,6 +393,10 @@ class CVSenseApp:
     def render_resume_explorer(self):
         """Render resume explorer"""
         st.markdown("## 📄 Resume Explorer")
+        
+        if self.raw_resumes is None or len(self.raw_resumes) == 0:
+            st.info("No resumes available. Use the Upload & Process page to add resumes.")
+            return
         
         # Resume selection
         resume_id = st.number_input(
