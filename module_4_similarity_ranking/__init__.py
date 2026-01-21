@@ -6,7 +6,9 @@ from .ranking import (
     rank_resumes,
     rank_resumes_for_job,
     extract_keywords,
-    COMMON_WORDS
+    extract_phrases,
+    STOP_WORDS,
+    TECH_PHRASES
 )
 
 __all__ = [
@@ -16,5 +18,7 @@ __all__ = [
     'rank_resumes',
     'rank_resumes_for_job',
     'extract_keywords',
-    'COMMON_WORDS'
+    'extract_phrases',
+    'STOP_WORDS',
+    'TECH_PHRASES'
 ]

@@ -14,40 +14,32 @@ from scipy.sparse import spmatrix
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# Common words to exclude from keyword matching
-COMMON_WORDS = {
+# Minimal stop words - only truly meaningless words
+STOP_WORDS = {
     'the', 'a', 'an', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been',
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
-    'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used',
-    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into',
-    'through', 'during', 'before', 'after', 'above', 'below', 'between',
+    'may', 'might', 'must', 'shall', 'can', 'to', 'of', 'in', 'for', 'on', 'with',
+    'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before', 'after',
     'this', 'that', 'these', 'those', 'it', 'its', 'we', 'our', 'you', 'your',
     'they', 'their', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
     'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so',
     'than', 'too', 'very', 'just', 'also', 'now', 'here', 'there', 'when',
     'where', 'why', 'how', 'what', 'which', 'who', 'whom', 'if', 'then', 'else',
-    'any', 'about', 'over', 'under', 'again', 'further', 'once', 'including',
-    'able', 'across', 'almost', 'along', 'already', 'although', 'always',
-    'among', 'another', 'around', 'away', 'back', 'become', 'becomes', 'being',
-    'best', 'better', 'big', 'come', 'comes', 'coming', 'consider', 'considered',
-    'could', 'day', 'days', 'different', 'done', 'down', 'either', 'end', 'enough',
-    'even', 'ever', 'example', 'experience', 'find', 'first', 'full', 'get',
-    'give', 'given', 'go', 'going', 'good', 'got', 'great', 'help', 'high',
-    'however', 'keep', 'know', 'last', 'least', 'less', 'let', 'like', 'likely',
-    'long', 'look', 'looking', 'made', 'make', 'makes', 'making', 'many', 'much',
-    'must', 'need', 'needed', 'needs', 'never', 'new', 'next', 'number', 'often',
-    'old', 'one', 'open', 'order', 'part', 'place', 'point', 'possible', 'put',
-    'rather', 'really', 'right', 'said', 'say', 'see', 'seem', 'seems', 'set',
-    'show', 'shown', 'since', 'small', 'something', 'still', 'sure', 'take',
-    'taken', 'tell', 'thing', 'things', 'think', 'three', 'time', 'today',
-    'together', 'top', 'toward', 'try', 'trying', 'turn', 'two', 'under',
-    'understand', 'until', 'upon', 'use', 'used', 'uses', 'using', 'want',
-    'way', 'ways', 'well', 'went', 'whether', 'while', 'within', 'without',
-    'work', 'working', 'works', 'world', 'would', 'year', 'years', 'yet',
-    'role', 'team', 'join', 'company', 'position', 'opportunity', 'responsibilities',
-    'requirements', 'qualifications', 'skills', 'required', 'preferred', 'must',
-    'strong', 'excellent', 'ability', 'candidate', 'ideal', 'location', 'salary'
+    'any', 'about', 'over', 'under', 'again', 'further', 'once', 'including'
 }
+
+# Technical phrases to match as units (high value)
+TECH_PHRASES = [
+    'machine learning', 'deep learning', 'natural language processing', 'nlp',
+    'computer vision', 'neural network', 'neural networks', 'data science',
+    'data scientist', 'data engineer', 'data engineering', 'data pipeline',
+    'data pipelines', 'feature engineering', 'model training', 'model deployment',
+    'api development', 'rest api', 'rest apis', 'fastapi', 'fast api',
+    'llm integration', 'ai systems', 'ai assistant', 'ml engineer',
+    'backend engineer', 'backend engineering', 'software engineer',
+    'cloud computing', 'cloud platforms', 'version control', 'ci cd',
+    'embedded systems', 'prompt engineering', 'workflow automation'
+]
 
 
 def extract_keywords(text: str, min_length: int = 2) -> Set[str]:
@@ -62,8 +54,18 @@ def extract_keywords(text: str, min_length: int = 2) -> Set[str]:
         Set of keywords
     """
     words = set(text.lower().split())
-    keywords = {w for w in words if len(w) >= min_length and w not in COMMON_WORDS}
+    keywords = {w for w in words if len(w) >= min_length and w not in STOP_WORDS}
     return keywords
+
+
+def extract_phrases(text: str) -> Set[str]:
+    """Extract technical phrases from text."""
+    text_lower = text.lower()
+    found_phrases = set()
+    for phrase in TECH_PHRASES:
+        if phrase in text_lower:
+            found_phrases.add(phrase)
+    return found_phrases
 
 
 def keyword_match_score(job_text: str, resume_text: str) -> float:
@@ -73,6 +75,7 @@ def keyword_match_score(job_text: str, resume_text: str) -> float:
     This is similar to how Jobscan calculates match scores:
     - Extract keywords from job description
     - Check what percentage appear in resume
+    - Also match technical phrases for bonus
     
     Args:
         job_text: Job description text
@@ -87,9 +90,29 @@ def keyword_match_score(job_text: str, resume_text: str) -> float:
     if not job_keywords:
         return 0.0
     
-    # How many job keywords are found in resume?
-    matched = job_keywords.intersection(resume_keywords)
-    return len(matched) / len(job_keywords)
+    # Word-level matching
+    matched_words = job_keywords.intersection(resume_keywords)
+    word_score = len(matched_words) / len(job_keywords)
+    
+    # Phrase-level matching (bonus for matching technical phrases)
+    job_phrases = extract_phrases(job_text)
+    resume_phrases = extract_phrases(resume_text)
+    
+    if job_phrases:
+        matched_phrases = job_phrases.intersection(resume_phrases)
+        phrase_score = len(matched_phrases) / len(job_phrases)
+    else:
+        phrase_score = 0.0
+    
+    # Combined score: 70% word matching + 30% phrase matching
+    # Phrases are valuable so they boost the score
+    combined_score = 0.7 * word_score + 0.3 * phrase_score
+    
+    # Boost if we have phrase matches (they indicate strong relevance)
+    if matched_phrases if job_phrases else False:
+        combined_score = min(1.0, combined_score * 1.2)
+    
+    return combined_score
 
 
 def compute_tfidf_similarity(
