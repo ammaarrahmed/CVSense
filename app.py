@@ -145,7 +145,8 @@ class CVSenseApp:
             st.sidebar.markdown("---")
             st.sidebar.markdown("## 📈 Dataset Stats")
             st.sidebar.metric("Total Resumes", len(self.raw_resumes))
-            st.sidebar.metric("Job Descriptions", len(self.raw_jobs))
+            if self.raw_jobs is not None:
+                st.sidebar.metric("Job Descriptions", len(self.raw_jobs))
             
             if self.rankings is not None:
                 st.sidebar.metric("Total Rankings", len(self.rankings))
@@ -208,14 +209,17 @@ class CVSenseApp:
             job_idx = int(selected_job.split('_')[1]) - 1
         else:
             job_idx = 0
-        job_info = self.raw_jobs.iloc[job_idx]
         
         col1, col2 = st.columns([1, 2])
         
         with col1:
             st.markdown("#### 📋 Job Details")
-            st.markdown(f"**Title:** {job_info['title']}")
-            st.markdown(f"**Category:** {job_info['category']}")
+            if self.raw_jobs is not None and job_idx < len(self.raw_jobs):
+                job_info = self.raw_jobs.iloc[job_idx]
+                st.markdown(f"**Title:** {job_info['title']}")
+                st.markdown(f"**Category:** {job_info['category']}")
+            else:
+                st.markdown(f"**Job:** {selected_job}")
         
         with col2:
             st.markdown("#### 🎯 Top Candidates")
@@ -224,7 +228,10 @@ class CVSenseApp:
                 color = "🟢" if score_pct > 60 else "🟡" if score_pct > 40 else "🔴"
                 
                 resume_id = int(row['Resume_ID'])
-                resume_category = self.raw_resumes.iloc[resume_id].get('Category', 'N/A') if resume_id < len(self.raw_resumes) else "N/A"
+                if self.raw_resumes is not None and resume_id < len(self.raw_resumes):
+                    resume_category = self.raw_resumes.iloc[resume_id].get('Category', 'N/A')
+                else:
+                    resume_category = "N/A"
                 
                 st.markdown(f"""
                 <div class="resume-card">
@@ -245,10 +252,11 @@ class CVSenseApp:
         col1, col2 = st.columns([2, 1])
         
         with col1:
+            max_jobs = len(self.raw_jobs) if self.raw_jobs is not None else 10
             job_idx = st.number_input(
                 "Select Job ID (1-10)",
                 min_value=1,
-                max_value=len(self.raw_jobs),
+                max_value=max_jobs,
                 value=1
             )
         
@@ -256,21 +264,27 @@ class CVSenseApp:
             top_n = st.slider("Number of Results", 3, 20, 5)
         
         # Get job info
-        job_info = self.raw_jobs.iloc[job_idx - 1]
+        if self.raw_jobs is not None and job_idx <= len(self.raw_jobs):
+            job_info = self.raw_jobs.iloc[job_idx - 1]
+        else:
+            job_info = None
         
         # Display job description
         st.markdown("### 📋 Job Description")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**Title:** {job_info['title']}")
-            st.markdown(f"**Category:** {job_info['category']}")
-        
-        with col2:
-            st.markdown(f"**ID:** {job_info['job_id']}")
-        
-        with st.expander("📄 View Full Description"):
-            st.text(job_info['description'])
+        if job_info is not None:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"**Title:** {job_info['title']}")
+                st.markdown(f"**Category:** {job_info['category']}")
+            
+            with col2:
+                st.markdown(f"**ID:** {job_info['job_id']}")
+            
+            with st.expander("📄 View Full Description"):
+                st.text(job_info['description'])
+        else:
+            st.warning("Job information not available.")
         
         # Get rankings
         job_name = f"Job_{job_idx}"
@@ -306,7 +320,7 @@ class CVSenseApp:
                 
                 with col2:
                     st.markdown("**Resume Text (Preview):**")
-                    preview_text = resume_data.get('cleaned_resume', str(resume_data.get('Resume_str', 'N/A')))[:500] + "..."
+                    preview_text = str(resume_data.get('cleaned_resume', str(resume_data.get('Resume_str', 'N/A'))))[:500] + "..."
                     st.text_area("", preview_text, height=150, key=f"resume_{resume_id}")
     
     def render_analytics(self):
@@ -350,9 +364,12 @@ class CVSenseApp:
         
         # Add category information
         if self.raw_resumes is not None:
-            resume_avg_scores['Category'] = resume_avg_scores['Resume_ID'].apply(
-                lambda x: self.raw_resumes.iloc[int(x)].get('Category', 'N/A') if int(x) < len(self.raw_resumes) else 'N/A'
-            )
+            def get_category(x):
+                idx = int(x)
+                if self.raw_resumes is not None and idx < len(self.raw_resumes):
+                    return self.raw_resumes.iloc[idx].get('Category', 'N/A')
+                return 'N/A'
+            resume_avg_scores['Category'] = resume_avg_scores['Resume_ID'].apply(get_category)
         else:
             resume_avg_scores['Category'] = 'N/A'
         
@@ -372,9 +389,12 @@ class CVSenseApp:
             
             # Merge rankings with resume categories
             rankings_with_cat = self.rankings.copy()
-            rankings_with_cat['Category'] = rankings_with_cat['Resume_ID'].apply(
-                lambda x: self.raw_resumes.iloc[int(x)].get('Category', 'Unknown') if int(x) < len(self.raw_resumes) else 'Unknown'
-            )
+            def get_category_rank(x):
+                idx = int(x)
+                if self.raw_resumes is not None and idx < len(self.raw_resumes):
+                    return self.raw_resumes.iloc[idx].get('Category', 'Unknown')
+                return 'Unknown'
+            rankings_with_cat['Category'] = rankings_with_cat['Resume_ID'].apply(get_category_rank)
             
             category_stats = rankings_with_cat.groupby('Category')['Similarity_Score'].agg(['mean', 'median', 'count']).reset_index()
             category_stats = category_stats.sort_values('mean', ascending=False)
