@@ -701,19 +701,19 @@ class CVSenseApp:
         jobs_df = pd.DataFrame(job_descriptions)
         jobs_df['job_id'] = [f"JOB_{i+1}" for i in range(len(jobs_df))]
         
-        # Preprocessing functions - Preserve technical terms but keep it simple
+        # Preprocessing functions
         def clean_text(text):
             text = str(text).lower()
-            # Keep alphanumeric and spaces - preserves esp32, n8n, python3
-            text = re.sub(r'[^\w\s]', ' ', text)
+            text = re.sub(r'\d+', '', text)
+            text = re.sub(r'[^\w\s]', '', text)
             text = re.sub(r'\s+', ' ', text)
             return text.strip()
         
         def preprocess_text(text):
-            # Simple preprocessing without aggressive lemmatization
-            tokens = text.split()
-            # Remove very short tokens but keep meaningful ones
-            tokens = [word for word in tokens if len(word) > 2]
+            lemmatizer = WordNetLemmatizer()
+            tokens = word_tokenize(text)
+            tokens = [word for word in tokens if word not in ENGLISH_STOP_WORDS and len(word) > 2]
+            tokens = [lemmatizer.lemmatize(word) for word in tokens]
             return ' '.join(tokens)
         
         # Process resumes
@@ -729,12 +729,9 @@ class CVSenseApp:
         job_texts = jobs_df['preprocessed_text'].tolist()
         all_texts = resume_texts + job_texts
         
-        # TF-IDF Vectorization - Balanced parameters
         vectorizer = TfidfVectorizer(
             max_features=5000,
-            ngram_range=(1, 2),  # Uni and bigrams
-            min_df=1,
-            max_df=0.9,
+            ngram_range=(1, 2),
             stop_words='english'
         )
         
