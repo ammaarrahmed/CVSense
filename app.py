@@ -701,24 +701,19 @@ class CVSenseApp:
         jobs_df = pd.DataFrame(job_descriptions)
         jobs_df['job_id'] = [f"JOB_{i+1}" for i in range(len(jobs_df))]
         
-        # Preprocessing functions - Less aggressive to preserve technical terms
+        # Preprocessing functions - Preserve technical terms but keep it simple
         def clean_text(text):
             text = str(text).lower()
-            # Keep numbers for technical terms (esp32, python3, n8n)
-            # Only remove special chars but keep alphanumerics and spaces
-            text = re.sub(r'[^\w\s]', ' ', text)  # Replace punctuation with space
-            text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+            # Keep alphanumeric and spaces - preserves esp32, n8n, python3
+            text = re.sub(r'[^\w\s]', ' ', text)
+            text = re.sub(r'\s+', ' ', text)
             return text.strip()
         
         def preprocess_text(text):
-            lemmatizer = WordNetLemmatizer()
-            tokens = word_tokenize(text)
-            # Less aggressive stop word removal - keep more context
-            # Only remove very common words, keep domain-specific terms
-            minimal_stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'is', 'are', 'was', 'were', 'been', 'be', 'have', 'has', 'had'}
-            tokens = [word for word in tokens if word not in minimal_stopwords and len(word) > 1]
-            # Light lemmatization to preserve meaning
-            tokens = [lemmatizer.lemmatize(word) for word in tokens]
+            # Simple preprocessing without aggressive lemmatization
+            tokens = text.split()
+            # Remove very short tokens but keep meaningful ones
+            tokens = [word for word in tokens if len(word) > 2]
             return ' '.join(tokens)
         
         # Process resumes
@@ -734,15 +729,13 @@ class CVSenseApp:
         job_texts = jobs_df['preprocessed_text'].tolist()
         all_texts = resume_texts + job_texts
         
-        # TF-IDF Vectorization - Optimized parameters for better matching
+        # TF-IDF Vectorization - Balanced parameters
         vectorizer = TfidfVectorizer(
-            max_features=8000,  # Increased from 5000 to capture more terms
-            ngram_range=(1, 3),  # Added trigrams for better phrase matching
-            min_df=1,  # Include rare terms (important for technical skills)
-            max_df=0.95,  # Keep most terms
-            stop_words=None,  # Already handled in preprocessing
-            sublinear_tf=True,  # Use log scaling for term frequency
-            norm='l2'  # L2 normalization
+            max_features=5000,
+            ngram_range=(1, 2),  # Uni and bigrams
+            min_df=1,
+            max_df=0.9,
+            stop_words='english'
         )
         
         tfidf_matrix = vectorizer.fit_transform(all_texts)
