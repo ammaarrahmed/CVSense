@@ -1,466 +1,280 @@
 # CVSense - Intelligent Resume Screening System
 
-End-to-end automated resume screening using NLP and Machine Learning to match resumes with job descriptions.
+Automated resume screening using NLP and Machine Learning to match resumes with job descriptions.
 
 ## 🚀 Quick Start
 
-### 1. Clone & Install
+### 1. Install
 ```bash
-git clone <repo-url>
+git clone https://github.com/ammaarrahmed/CVSense.git
 cd CVSense
 pip install -r requirements.txt
 ```
 
-### 2. Set Up Kaggle API (Required for Module 1)
-```bash
-# Copy template
-cp .env.example .env
-
-# Get your Kaggle API credentials:
-# 1. Go to https://www.kaggle.com/account
-# 2. Click "Create New API Token" (downloads kaggle.json)
-# 3. Open kaggle.json and copy username & key values
-# 4. Paste them into .env file
-```
-
-**Your `.env` file should look like:**
-```
-KAGGLE_USERNAME=your_username
-KAGGLE_KEY=abc123def456...
-```
-
-**Note:** `.env` is in `.gitignore` - your credentials stay private!
-
-### 3. Run Module 1 (Data Ingestion)
-```bash
-jupyter notebook module_1_data_ingestion/data_ingestion.ipynb
-# Or open in VS Code and run all cells
-```
-
-### 4. Run Complete Pipeline
-```bash
-# Run all modules automatically
-python main.py
-
-# Or run from a specific module
-python main.py --module 2
-
-# Force re-run all modules
-python main.py --force
-
-# Run evaluation only
-python main.py --evaluate
-```
-
-### 5. Launch Web Interface
-
-**Option A: Automated Upload (Recommended)** ✨ NEW
+### 2. Launch Web Interface
 ```bash
 streamlit run app.py
-# Go to "Upload & Process" page
-# Upload your resume PDFs
-# Add job descriptions
-# Click "Process & Match"
-# See results instantly!
 ```
 
-**Option B: View Pre-Processed Results**
-```bash
-streamlit run app.py
-# Browse dashboard, analytics, job search
-```
-
-Then open your browser to `http://localhost:8501`
-
-[📖 Upload Guide](UPLOAD_GUIDE.md) - Complete guide for the automated upload feature
+Then open `http://localhost:8501` in your browser.
 
 ---
 
-## 📊 System Architecture
+## 💡 Main Use Case: Google Forms Job Applications
 
-### Complete Pipeline Flow
+Perfect for screening resumes submitted through Google Forms!
 
-```
-Module 1: Data Ingestion
-    ↓
-Module 2: Text Preprocessing
-    ↓
-Module 3: TF-IDF Vectorization
-    ↓
-Module 4: Similarity Ranking
-    ↓
-Module 5: Evaluation & Validation
-```
+### How It Works
+
+1. **Create a Google Form** with resume file upload
+2. **Submitted resumes** are stored in a Google Drive folder
+3. **Share the folder** (anyone with link can view)
+4. **Paste the link in CVSense** → Instant ranking!
+
+### Step-by-Step
+
+1. Go to **📁 Google Drive Import** page
+2. Paste your shared Drive folder URL
+3. Click "Download Resumes from Drive"
+4. Add your job description(s)
+5. Click "Match Resumes to Jobs"
+6. View ranked results on Dashboard!
+
+---
+
+## 📊 Features
+
+### 🔗 Google Drive Integration
+- Import resumes from shared Drive folders
+- Supports PDF, DOCX, and TXT files
+- Batch processing for multiple resumes
+
+### ⬆️ Direct Upload
+- Upload resume PDFs directly
+- Add job descriptions via text or file upload
+- Instant processing and ranking
+
+### 🎯 Hybrid Matching Algorithm
+- **Keyword matching** (like Jobscan)
+- **TF-IDF cosine similarity**
+- **Phrase matching** for technical terms
+- **Synonym expansion** (ML ↔ machine learning)
+
+### 📈 Results Dashboard
+- Score distribution visualization
+- Top candidates per job
+- Export rankings to CSV
 
 ---
 
 ## 📁 Project Structure
 
-### Module 1: Data Ingestion & Resume Handling
+```
+CVSense/
+├── app.py                          # Streamlit web interface
+├── main.py                         # CLI pipeline runner
+├── requirements.txt                # Dependencies
+│
+├── module_1_data_ingestion/        # Google Drive integration
+│   ├── google_drive.py             # Download & extract resumes
+│   └── README.md
+│
+├── module_2_text_preprocessing/    # Text cleaning
+│   ├── preprocessing.py            # clean_text(), preprocess_text()
+│   └── README.md
+│
+├── module_3_feature_extraction/    # TF-IDF vectorization
+│   ├── tfidf.py                    # create_tfidf_vectors()
+│   └── README.md
+│
+├── module_4_similarity_ranking/    # Matching algorithm
+│   ├── ranking.py                  # Hybrid scoring, ranking
+│   └── README.md
+│
+├── module_5_evaluation_documentation/
+│   └── README.md
+│
+└── data/                           # Sample data (optional)
+    ├── resumes/
+    └── job_descriptions/
+```
 
-Handles data collection, PDF extraction, and dataset organization.
+---
 
-**Location:** `module_1_data_ingestion/`
+## 🛠️ Modules
 
-**Key Features:**
-- Downloads resume dataset from Kaggle (100 resumes)
-- Extracts text from PDF files
-- Creates 10 sample job descriptions
-- Validates data quality
-- Outputs: `data/processed_resumes.csv`, `data/processed_job_descriptions.csv`
+### Module 1: Data Ingestion
+**Google Drive integration for importing resumes**
 
-**Run:**
-```bash
-jupyter notebook module_1_data_ingestion/data_ingestion.ipynb
+```python
+from module_1_data_ingestion import download_resumes_from_drive, process_resume_files
+
+# Download from Google Drive
+result = download_resumes_from_drive("https://drive.google.com/drive/folders/...")
+resumes = process_resume_files(result['files'])
 ```
 
 ### Module 2: Text Preprocessing
+**Clean and normalize text**
 
-Combines text cleaning, normalization, and linguistic preprocessing.
+```python
+from module_2_text_preprocessing import clean_text, preprocess_text
 
-**Location:** `module_2_text_preprocessing/`
-
-**Key Features:**
-- Phase A: Text cleaning (lowercase, remove numbers/punctuation)
-- Phase B: Linguistic preprocessing (tokenization, stopword removal, lemmatization)
-- NLTK-based processing
-- Outputs: `data/linguistically_preprocessed_files/preprocessed_*.csv`
-
-**Run:**
-```bash
-python main.py --module 2
+cleaned = clean_text(raw_text)
+processed = preprocess_text(cleaned)
 ```
 
-### Module 3: Feature Extraction (TF-IDF)
+### Module 3: Feature Extraction
+**TF-IDF vectorization**
 
-Implements TF-IDF vectorization to convert text into numerical vectors.
+```python
+from module_3_feature_extraction import create_tfidf_vectors
 
-**Location:** `module_3_feature_extraction/`
-
-**Key Features:**
-- TF-IDF vectorization with 5000 max features
-- Bi-gram support (1-2 word combinations)
-- Consistent vocabulary across resumes and jobs
-- Outputs: `module_3_feature_extraction/tfidf_vectors.pkl`
-
-**Run:**
-```bash
-python main.py --module 3
+vectors = create_tfidf_vectors(resume_texts, job_texts)
 ```
 
-### Module 4: Similarity Computation & Ranking
+### Module 4: Similarity & Ranking
+**Hybrid matching with keyword + TF-IDF scoring**
 
-Computes cosine similarity and ranks resumes based on relevance.
+```python
+from module_4_similarity_ranking import compute_hybrid_scores, rank_resumes
 
-**Location:** `module_4_similarity_ranking/`
-
-**Key Features:**
-- Cosine similarity calculation
-- Top-5 resume ranking per job
-- Similarity score matrix
-- Outputs: `module_4_similarity_ranking/module5_resume_ranking.csv`
-
-**Run:**
-```bash
-python main.py --module 4
-```
-
-### Module 5: Evaluation, Validation & Documentation
-
-Analyzes results, validates rankings, and documents system performance.
-
-**Location:** Root directory files
-
-**Key Features:**
-- Statistical analysis of similarity scores
-- Score distribution visualization
-- Manual validation template generation
-- Performance metrics
-- Outputs: `evaluation_score_distribution.png`, `manual_validation.csv`
-
-**Run:**
-```bash
-python main.py --evaluate
+scores = compute_hybrid_scores(job_texts, resume_texts, job_vectors, resume_vectors)
+rankings = rank_resumes(scores, top_n=5)
 ```
 
 ---
 
-## 🛠️ Command-Line Interface
+## 🌐 Web Interface Pages
 
-### Main Pipeline Script (`main.py`)
-
-```bash
-# Run complete pipeline (Modules 2-5)
-python main.py
-
-# Force re-run all modules (ignore cached data)
-python main.py --force
-
-# Start from specific module
-python main.py --module 2  # Runs 2→3→4→5
-python main.py --module 3  # Runs 3→4→5
-python main.py --module 4  # Runs 4→5
-
-# Run evaluation only
-python main.py --evaluate
-
-# Get help
-python main.py --help
-```
-
-**Pipeline Intelligence:**
-- Automatically detects which modules have already run
-- Skips completed modules (unless `--force` is used)
-- Validates prerequisites before execution
-- Provides progress updates and status checks
-
----
-
-## 🌐 Web Interface (`app.py`)
-
-### Launch the App
-
-```bash
-streamlit run app.py
-```
-
-### Features
-
-**🏠 Dashboard**
-- Quick overview of system status
-- Score distribution visualization
-- Top matches per job
-- Key performance metrics
-
-**🔍 Job Search**
-- Select job description
-- View top matching resumes
-- Adjust number of results
-- Expandable resume previews
-
-**📊 Analytics**
-- Overall performance statistics
-- Score distribution by job
-- Top performing resumes
-- Category-wise analysis
-
-**📄 Resume Explorer**
-- Browse individual resumes
-- View original, cleaned, and preprocessed text
-- See ranking performance across all jobs
-- Match score statistics
-
-**ℹ️ About**
-- System documentation
-- Pipeline explanation
-- Technology stack
-- Usage instructions
-
----
-
-## 📂 Data Directory Structure
-
-```
-data/
-├── resumes/                          # Raw resume PDFs (from Kaggle)
-├── job_descriptions/                 # Sample job description files
-├── processed_resumes.csv             # Module 1 output
-├── processed_job_descriptions.csv    # Module 1 output
-└── linguistically_preprocessed_files/
-    ├── preprocessed_resumes_final.csv    # Module 2 output
-    └── preprocessed_jobs_final.csv       # Module 2 output
-```
-
-**Note:** CSV files and raw data are in `.gitignore` - they're generated by running the pipeline.
+| Page | Description |
+|------|-------------|
+| 🏠 **Dashboard** | View results, score distribution, top matches |
+| ⬆️ **Upload & Process** | Upload PDFs and job descriptions directly |
+| 📁 **Google Drive Import** | Import resumes from shared Drive folder |
+| ℹ️ **About** | Documentation and system info |
 
 ---
 
 ## 🔧 Dependencies
 
-### Core Libraries
-- **Python 3.8+**: Base language
-- **pandas**: Data manipulation
-- **numpy**: Numerical operations
-- **scikit-learn**: TF-IDF, cosine similarity
+```
+# Core
+pandas, numpy, scikit-learn
 
-### NLP & Text Processing
-- **NLTK**: Tokenization, lemmatization, stopwords
-- **PyPDF2/pdfplumber**: PDF text extraction
+# NLP
+nltk
 
-### Visualization & UI
-- **matplotlib**: Static plots
-- **seaborn**: Statistical visualizations
-- **plotly**: Interactive charts
-- **streamlit**: Web interface
+# PDF/Document Processing
+pdfplumber, PyPDF2, python-docx
 
-### Data Collection
-- **kaggle**: API for dataset download
-- **python-dotenv**: Environment variable management
+# Google Drive
+gdown, requests
 
-Install all dependencies:
+# Web Interface
+streamlit, plotly
+```
+
+Install all:
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🎯 Usage Examples
+## 🎯 Matching Algorithm
 
-### Example 1: Complete First-Time Setup
+CVSense uses a **hybrid approach** combining multiple techniques:
 
-```bash
-# 1. Setup credentials
-cp .env.example .env
-# Edit .env with your Kaggle credentials
+### 1. Keyword Matching (70%)
+- Extracts meaningful words from job description
+- Checks overlap with resume keywords
+- Expands synonyms (AI ↔ artificial intelligence, ML ↔ machine learning)
 
-# 2. Run Module 1 (data ingestion)
-jupyter notebook module_1_data_ingestion/data_ingestion.ipynb
-# Run all cells in the notebook
+### 2. TF-IDF Similarity (30%)
+- Vectorizes text with n-grams (1-2 words)
+- Computes cosine similarity
+- Captures semantic patterns
 
-# 3. Run complete pipeline
-python main.py
+### 3. Phrase Matching (Bonus)
+- Detects technical phrases ("machine learning", "data science", etc.)
+- Boosts score for matching phrases
 
-# 4. Launch web interface
-streamlit run app.py
-```
-
-### Example 2: Re-run After Changes
-
-```bash
-# Re-run from Module 2 onwards (if you changed preprocessing)
-python main.py --module 2
-
-# Re-run from Module 3 onwards (if you changed vectorization)
-python main.py --module 3
-
-# Force complete re-run (ignore cached data)
-python main.py --force
-```
-
-### Example 3: Quick Evaluation
-
-```bash
-# Only run evaluation (Module 5)
-python main.py --evaluate
-```
+### Synonym/Abbreviation Support
+Automatically matches:
+- `ML` ↔ `machine learning`
+- `AI` ↔ `artificial intelligence`
+- `JS` ↔ `JavaScript`
+- `k8s` ↔ `kubernetes`
+- And 40+ more mappings
 
 ---
 
-## 📊 Expected Outputs
+## 📊 Example Output
 
-### Module 1
-- ✅ `data/processed_resumes.csv` (100 resumes)
-- ✅ `data/processed_job_descriptions.csv` (10 jobs)
-- ✅ `module_1_data_ingestion/data_quality_report.json`
+```
+Job: Machine Learning Engineer
 
-### Module 2
-- ✅ `data/linguistically_preprocessed_files/preprocessed_resumes_final.csv`
-- ✅ `data/linguistically_preprocessed_files/preprocessed_jobs_final.csv`
-
-### Module 3
-- ✅ `module_3_feature_extraction/tfidf_vectors.pkl`
-
-### Module 4
-- ✅ `module_4_similarity_ranking/module5_resume_ranking.csv`
-
-### Module 5
-- ✅ `evaluation_score_distribution.png`
-- ✅ `manual_validation.csv`
+Rank | Resume              | Match Score
+-----|---------------------|------------
+1    | john_doe_ml.pdf     | 67.3%
+2    | jane_smith_ds.pdf   | 54.1%
+3    | bob_wilson_dev.pdf  | 42.8%
+4    | alice_chen_eng.pdf  | 38.5%
+5    | mike_jones_sw.pdf   | 31.2%
+```
 
 ---
 
 ## 🔍 Troubleshooting
 
-### Module 1 Issues
+### Google Drive Issues
 
-**Problem:** Kaggle API not working
+**"gdown not installed"**
 ```bash
-# Solution: Verify .env file
-cat .env
-# Should show KAGGLE_USERNAME and KAGGLE_KEY
-
-# Alternative: Check kaggle config
-cat ~/.kaggle/kaggle.json
+pip install gdown
 ```
 
-**Problem:** PDF extraction errors
-- Some PDFs may fail extraction (images, scanned documents)
-- Module 1 automatically handles errors and continues
-- Check `data_quality_report.json` for validation results
+**"Could not download folder"**
+- Make sure folder is shared as "Anyone with link can view"
+- Check that the URL is correct
 
-### Pipeline Issues
+### PDF Extraction Issues
 
-**Problem:** "Module 1 data not found"
-```bash
-# Solution: Run Module 1 first
-jupyter notebook module_1_data_ingestion/data_ingestion.ipynb
-```
+**"Could not extract text"**
+- Some scanned PDFs (images) don't have extractable text
+- Try DOCX or TXT format instead
 
-**Problem:** Missing NLTK data
+### NLTK Data Missing
+
 ```python
-# Solution: Download NLTK resources
 import nltk
 nltk.download('punkt')
 nltk.download('wordnet')
-nltk.download('punkt_tab')
-```
-
-### Web Interface Issues
-
-**Problem:** Streamlit not found
-```bash
-# Solution: Install streamlit
-pip install streamlit plotly
-```
-
-**Problem:** "Rankings not available"
-```bash
-# Solution: Run pipeline first
-python main.py
 ```
 
 ---
 
-## 👥 Team Contributions
+## 👥 Team
 
-- **Module 1**: Data Ingestion & Resume Handling
-- **Module 2**: Text Preprocessing (Person 2 & 3)
-- **Module 3**: Feature Extraction - TF-IDF (Person 4)
-- **Module 4**: Similarity Computation & Ranking (Person 5)
+- **Module 1**: Data Ingestion & Google Drive Integration
+- **Module 2**: Text Preprocessing
+- **Module 3**: Feature Extraction (TF-IDF)
+- **Module 4**: Similarity Computation & Ranking
 - **Module 5**: Evaluation & Documentation
 
 ---
 
 ## 📝 License
 
-This project was created for educational purposes as part of an internship assignment.
-
----
-
-## 🎓 Learning Outcomes
-
-This project demonstrates:
-- ✅ End-to-end ML pipeline development
-- ✅ Natural Language Processing techniques
-- ✅ TF-IDF vectorization and cosine similarity
-- ✅ Modular code architecture
-- ✅ Web application development
-- ✅ Data visualization
-- ✅ Team collaboration via Git
+Educational project for internship assignment.
 
 ---
 
 ## 🚀 Future Enhancements
 
-Potential improvements:
-- [ ] Add custom job description input
-- [ ] Implement resume upload functionality
-- [ ] Use deep learning embeddings (Word2Vec, BERT)
-- [ ] Add multi-language support
-- [ ] Implement user authentication
-- [ ] Export rankings to PDF reports
-- [ ] Add email notification for top candidates
-
----
-
-**For detailed module documentation, see individual `README.md` files in each module directory.**
+- [ ] Add deep learning embeddings (sentence-transformers)
+- [ ] Email notifications for top candidates
+- [ ] PDF report generation
+- [ ] Multi-language support
+- [ ] OAuth for private Drive folders
