@@ -7,7 +7,6 @@ Interactive Streamlit application for resume screening
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle
 from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
@@ -23,6 +22,13 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Check for gdown availability
+try:
+    import gdown
+    GDOWN_AVAILABLE = True
+except ImportError:
+    GDOWN_AVAILABLE = False
 
 # Custom CSS
 st.markdown("""
@@ -58,57 +64,7 @@ class CVSenseApp:
     
     def __init__(self):
         self.data_dir = DATA_DIR
-        self.preprocessed_dir = self.data_dir / 'linguistically_preprocessed_files'
-        
-        # Load data
-        self.load_data()
-    
-    def load_data(self):
-        """Load all necessary data files"""
-        try:
-            # Raw data - try processed files first, fallback to preprocessed
-            if (self.data_dir / 'processed_resumes.csv').exists():
-                self.raw_resumes = pd.read_csv(self.data_dir / 'processed_resumes.csv')
-                self.raw_jobs = pd.read_csv(self.data_dir / 'processed_job_descriptions.csv')
-            elif (self.preprocessed_dir / 'preprocessed_resumes_final.csv').exists():
-                # Use preprocessed files as raw data if processed files don't exist
-                self.raw_resumes = pd.read_csv(self.preprocessed_dir / 'preprocessed_resumes_final.csv')
-                self.raw_jobs = pd.read_csv(self.preprocessed_dir / 'preprocessed_jobs_final.csv')
-            else:
-                self.raw_resumes = None
-                self.raw_jobs = None
-            
-            # Preprocessed data
-            if (self.preprocessed_dir / 'preprocessed_resumes_final.csv').exists():
-                self.preprocessed_resumes = pd.read_csv(self.preprocessed_dir / 'preprocessed_resumes_final.csv')
-                self.preprocessed_jobs = pd.read_csv(self.preprocessed_dir / 'preprocessed_jobs_final.csv')
-            else:
-                self.preprocessed_resumes = None
-                self.preprocessed_jobs = None
-            
-            # Rankings
-            rankings_path = PROJECT_ROOT / 'module_4_similarity_ranking' / 'module5_resume_ranking.csv'
-            if rankings_path.exists():
-                self.rankings = pd.read_csv(rankings_path)
-            else:
-                self.rankings = None
-            
-            # TF-IDF vectors
-            vectors_path = PROJECT_ROOT / 'module_3_feature_extraction' / 'tfidf_vectors.pkl'
-            if vectors_path.exists():
-                with open(vectors_path, 'rb') as f:
-                    self.tfidf_data = pickle.load(f)
-            else:
-                self.tfidf_data = None
-                
-        except Exception as e:
-            st.warning(f"Some data files are missing. Upload & Process page will be available for custom processing.")
-            self.raw_resumes = None
-            self.raw_jobs = None
-            self.preprocessed_resumes = None
-            self.preprocessed_jobs = None
-            self.rankings = None
-            self.tfidf_data = None
+        # No static data loading - all processing is dynamic
     
     def render_sidebar(self):
         """Render sidebar navigation"""
@@ -117,39 +73,24 @@ class CVSenseApp:
         pages = {
             "🏠 Dashboard": "dashboard",
             "⬆️ Upload & Process": "upload",
-            "🔍 Job Search": "job_search",
-            "📊 Analytics": "analytics",
-            "📄 Resume Explorer": "resume_explorer",
+            "📁 Google Drive Import": "google_drive",
             "ℹ️ About": "about"
         }
         
         selection = st.sidebar.radio("Go to", list(pages.keys()))
         
-        # System status
+        # Session state status
         st.sidebar.markdown("---")
-        st.sidebar.markdown("## 📊 System Status")
+        st.sidebar.markdown("## 📊 Session Status")
         
-        status = {
-            "Module 1": self.raw_resumes is not None,
-            "Module 2": self.preprocessed_resumes is not None,
-            "Module 3": self.tfidf_data is not None,
-            "Module 4": self.rankings is not None
-        }
-        
-        for module, is_complete in status.items():
-            icon = "✅" if is_complete else "❌"
-            st.sidebar.text(f"{icon} {module}")
-        
-        # Stats
-        if self.raw_resumes is not None:
-            st.sidebar.markdown("---")
-            st.sidebar.markdown("## 📈 Dataset Stats")
-            st.sidebar.metric("Total Resumes", len(self.raw_resumes))
-            if self.raw_jobs is not None:
-                st.sidebar.metric("Job Descriptions", len(self.raw_jobs))
-            
-            if self.rankings is not None:
-                st.sidebar.metric("Total Rankings", len(self.rankings))
+        if 'processed_data' in st.session_state and st.session_state.processed_data:
+            st.sidebar.text("✅ Data Processed")
+            results = st.session_state.processed_data
+            st.sidebar.metric("Resumes", results['num_resumes'])
+            st.sidebar.metric("Jobs", results['num_jobs'])
+        else:
+            st.sidebar.text("❌ No data processed yet")
+            st.sidebar.info("Upload resumes or import from Google Drive to get started")
         
         return pages[selection]
     
@@ -158,332 +99,290 @@ class CVSenseApp:
         st.markdown('<div class="main-header">📄 CVSense - Intelligent Resume Screening</div>', 
                    unsafe_allow_html=True)
         
-        st.markdown("### 🎯 Quick Overview")
+        st.markdown("### 🎯 Welcome to CVSense!")
         
-        if self.rankings is None:
-            st.info("👋 Welcome to CVSense! No pre-processed data available.")
+        # Check if we have processed data
+        if 'processed_data' not in st.session_state or not st.session_state.processed_data:
+            st.info("👋 No resumes processed yet. Get started by:")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                ### ⬆️ Upload Files
+                Upload resume PDFs and job descriptions directly.
+                
+                Best for: Small batches, quick testing
+                """)
+                if st.button("Go to Upload Page", key="go_upload"):
+                    st.session_state.nav_to = "upload"
+                    st.rerun()
+            
+            with col2:
+                st.markdown("""
+                ### 📁 Google Drive Import
+                Connect to a Google Drive folder containing resumes from form submissions.
+                
+                Best for: Batch processing from Google Forms
+                """)
+                if st.button("Go to Google Drive Import", key="go_gdrive"):
+                    st.session_state.nav_to = "google_drive"
+                    st.rerun()
+            
+            st.markdown("---")
             st.markdown("""
-            **Get Started:**
-            - Use the **⬆️ Upload & Process** page to upload resumes and job descriptions
-            - The system will automatically process and rank candidates
-            - Or run the full pipeline locally: `python main.py`
+            ### 💡 Use Case: Google Forms Job Applications
+            
+            1. Create a Google Form for job applications with a file upload field
+            2. Responses are stored in a Google Drive folder
+            3. Share the folder link (anyone with link can view)
+            4. Paste the link in CVSense → We download and rank all resumes!
             """)
             return
+        
+        # Display results if we have processed data
+        results = st.session_state.processed_data
+        
+        st.markdown("### 📊 Processing Results")
         
         # Metrics row
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("Total Resumes", len(self.raw_resumes) if self.raw_resumes is not None else 0)
+            st.metric("Resumes Processed", results['num_resumes'])
         with col2:
-            st.metric("Job Positions", len(self.raw_jobs) if self.raw_jobs is not None else 0)
+            st.metric("Job Positions", results['num_jobs'])
         with col3:
-            avg_score = self.rankings['Similarity_Score'].mean()
-            st.metric("Avg Match Score", f"{avg_score:.2%}")
+            avg_score = results['rankings']['Similarity_Score'].mean()
+            st.metric("Avg Match Score", f"{avg_score:.1%}")
         with col4:
-            high_matches = len(self.rankings[self.rankings['Similarity_Score'] > 0.5])
+            high_matches = len(results['rankings'][results['rankings']['Similarity_Score'] > 0.5])
             st.metric("High Matches (>50%)", high_matches)
         
         # Score distribution
         st.markdown("### 📊 Score Distribution")
         fig = px.histogram(
-            self.rankings,
+            results['rankings'],
             x='Similarity_Score',
-            nbins=30,
-            title='Resume Similarity Score Distribution',
-            labels={'Similarity_Score': 'Similarity Score', 'count': 'Frequency'}
+            nbins=20,
+            title='Resume Match Score Distribution',
+            labels={'Similarity_Score': 'Match Score', 'count': 'Frequency'}
         )
         fig.update_layout(showlegend=False)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True)
         
         # Top matches per job
         st.markdown("### 🏆 Top Matches by Job")
         
-        job_options = sorted(self.rankings['Job'].unique())
-        selected_job = st.selectbox("Select Job Description", job_options)
+        for job_idx in range(results['num_jobs']):
+            job_name = f"Job_{job_idx+1}"
+            job_info = results['jobs'].iloc[job_idx]
+            job_rankings = results['rankings'][results['rankings']['Job'] == job_name].head(5)
+            
+            with st.expander(f"**{job_info['title']}** - Top {len(job_rankings)} candidates"):
+                for _, row in job_rankings.iterrows():
+                    resume_id = int(row['Resume_ID'])
+                    resume_data = results['resumes'].iloc[resume_id]
+                    score = row['Similarity_Score']
+                    
+                    color = "🟢" if score > 0.5 else "🟡" if score > 0.3 else "🔴"
+                    
+                    st.markdown(f"""
+                    <div class="resume-card">
+                        {color} <b>Rank {int(row['Rank'])}</b> - {resume_data.get('filename', f'Resume {resume_id}')} 
+                        - Match: <b>{score*100:.1f}%</b>
+                    </div>
+                    """, unsafe_allow_html=True)
         
-        job_rankings = self.rankings[self.rankings['Job'] == selected_job].head(10)
+        # Download results
+        st.markdown("### 💾 Export Results")
         
-        # Get job details
-        if selected_job:
-            job_idx = int(selected_job.split('_')[1]) - 1
-        else:
-            job_idx = 0
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.markdown("#### 📋 Job Details")
-            if self.raw_jobs is not None and job_idx < len(self.raw_jobs):
-                job_info = self.raw_jobs.iloc[job_idx]
-                st.markdown(f"**Title:** {job_info['title']}")
-                st.markdown(f"**Category:** {job_info['category']}")
-            else:
-                st.markdown(f"**Job:** {selected_job}")
-        
-        with col2:
-            st.markdown("#### 🎯 Top Candidates")
-            for _, row in job_rankings.iterrows():
-                score_pct = row['Similarity_Score'] * 100
-                color = "🟢" if score_pct > 60 else "🟡" if score_pct > 40 else "🔴"
-                
-                resume_id = int(row['Resume_ID'])
-                if self.raw_resumes is not None and resume_id < len(self.raw_resumes):
-                    resume_category = self.raw_resumes.iloc[resume_id].get('Category', 'N/A')
-                else:
-                    resume_category = "N/A"
-                
-                st.markdown(f"""
-                <div class="resume-card">
-                    {color} <b>Rank {int(row['Rank'])}</b> - Resume #{resume_id} 
-                    ({resume_category}) - Match: <b>{score_pct:.1f}%</b>
-                </div>
-                """, unsafe_allow_html=True)
+        csv_data = results['rankings'].to_csv(index=False)
+        st.download_button(
+            label="📥 Download Rankings CSV",
+            data=csv_data,
+            file_name=f"resume_rankings_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
     
-    def render_job_search(self):
-        """Render job search interface"""
-        st.markdown("## 🔍 Resume Search by Job Description")
+    def render_google_drive(self):
+        """Render Google Drive import page"""
+        st.markdown("## 📁 Import Resumes from Google Drive")
         
-        if self.rankings is None:
-            st.warning("⚠️ Rankings not available. Run the pipeline first: `python main.py`")
+        st.markdown("""
+        Import resumes directly from a Google Drive folder. Perfect for processing
+        applications submitted through Google Forms!
+        
+        ### 📋 Requirements
+        - The Google Drive folder must be **shared** (anyone with link can view)
+        - Supported file types: PDF, DOCX, TXT
+        """)
+        
+        if not GDOWN_AVAILABLE:
+            st.error("⚠️ gdown library not installed. Please install it: `pip install gdown`")
+            st.code("pip install gdown", language="bash")
             return
         
-        # Job selection
-        col1, col2 = st.columns([2, 1])
+        # Initialize session state
+        if 'gdrive_resumes' not in st.session_state:
+            st.session_state.gdrive_resumes = None
         
-        with col1:
-            max_jobs = len(self.raw_jobs) if self.raw_jobs is not None else 10
-            job_idx = st.number_input(
-                "Select Job ID (1-10)",
-                min_value=1,
-                max_value=max_jobs,
-                value=1
-            )
+        # Google Drive URL input
+        st.markdown("### 🔗 Step 1: Enter Google Drive Folder Link")
         
-        with col2:
-            top_n = st.slider("Number of Results", 3, 20, 5)
+        drive_url = st.text_input(
+            "Google Drive Folder URL",
+            placeholder="https://drive.google.com/drive/folders/YOUR_FOLDER_ID",
+            help="Paste the shared folder link from Google Drive"
+        )
         
-        # Get job info
-        if self.raw_jobs is not None and job_idx <= len(self.raw_jobs):
-            job_info = self.raw_jobs.iloc[job_idx - 1]
-        else:
-            job_info = None
-        
-        # Display job description
-        st.markdown("### 📋 Job Description")
-        
-        if job_info is not None:
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"**Title:** {job_info['title']}")
-                st.markdown(f"**Category:** {job_info['category']}")
+        if st.button("📥 Download Resumes from Drive", type="primary"):
+            if not drive_url:
+                st.error("Please enter a Google Drive folder URL")
+                return
             
-            with col2:
-                st.markdown(f"**ID:** {job_info['job_id']}")
-            
-            with st.expander("📄 View Full Description"):
-                st.text(job_info['description'])
-        else:
-            st.warning("Job information not available.")
+            with st.spinner("⏳ Downloading resumes from Google Drive..."):
+                try:
+                    from module_1_data_ingestion.google_drive import (
+                        download_resumes_from_drive,
+                        process_resume_files
+                    )
+                    
+                    # Download files
+                    result = download_resumes_from_drive(drive_url)
+                    
+                    if result['errors']:
+                        for error in result['errors']:
+                            st.warning(f"⚠️ {error}")
+                    
+                    if result['count'] == 0:
+                        st.error("❌ No resume files found in the folder. Make sure the folder contains PDF, DOCX, or TXT files.")
+                        return
+                    
+                    st.success(f"✅ Downloaded {result['count']} resume file(s)")
+                    
+                    # Extract text
+                    with st.spinner("📄 Extracting text from resumes..."):
+                        resumes = process_resume_files(result['files'])
+                        
+                        # Filter successful extractions
+                        valid_resumes = [r for r in resumes if r['text'] and not r['error']]
+                        failed = [r for r in resumes if r['error']]
+                        
+                        if failed:
+                            with st.expander(f"⚠️ {len(failed)} file(s) could not be processed"):
+                                for r in failed:
+                                    st.text(f"- {r['filename']}: {r['error']}")
+                        
+                        st.session_state.gdrive_resumes = valid_resumes
+                        st.success(f"✅ Successfully extracted text from {len(valid_resumes)} resume(s)")
+                        
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    st.exception(e)
         
-        # Get rankings
-        job_name = f"Job_{job_idx}"
-        job_rankings = self.rankings[self.rankings['Job'] == job_name].head(top_n)
-        
-        st.markdown(f"### 🎯 Top {top_n} Matching Resumes")
-        
-        for _, row in job_rankings.iterrows():
-            resume_id = int(row['Resume_ID'])
-            if self.raw_resumes is not None and resume_id < len(self.raw_resumes):
-                resume_data = self.raw_resumes.iloc[resume_id]
-            else:
-                resume_data = pd.Series({'Category': 'N/A', 'ID': resume_id, 'cleaned_resume': 'N/A', 'Resume_str': 'N/A'})
+        # Show downloaded resumes and job input
+        if st.session_state.gdrive_resumes:
+            resumes = st.session_state.gdrive_resumes
             
-            score = row['Similarity_Score']
+            st.markdown("---")
+            st.markdown(f"### 📄 {len(resumes)} Resumes Ready for Processing")
             
-            # Score color
-            if score > 0.6:
-                score_color = "success"
-            elif score > 0.4:
-                score_color = "warning"
-            else:
-                score_color = "error"
+            with st.expander("View downloaded resumes"):
+                for i, resume in enumerate(resumes):
+                    st.markdown(f"**{i+1}. {resume['filename']}**")
+                    st.text_area("Preview", resume['text'][:500] + "...", height=100, key=f"gdrive_preview_{i}")
             
-            # Resume card
-            with st.expander(f"#{int(row['Rank'])} - Resume {resume_id} - {resume_data.get('Category', 'N/A')} - {score:.1%} Match"):
-                col1, col2 = st.columns([1, 3])
+            # Job description input
+            st.markdown("### 💼 Step 2: Add Job Description(s)")
+            
+            num_jobs = st.number_input("Number of job positions", min_value=1, max_value=10, value=1)
+            
+            job_descriptions = []
+            for i in range(num_jobs):
+                with st.expander(f"Job Description {i+1}", expanded=(i==0)):
+                    job_title = st.text_input(f"Job Title", key=f"gdrive_title_{i}")
+                    job_category = st.text_input(f"Category", value="General", key=f"gdrive_cat_{i}")
+                    job_desc = st.text_area(f"Description", height=150, key=f"gdrive_desc_{i}")
+                    
+                    if job_title and job_desc:
+                        job_descriptions.append({
+                            'title': job_title,
+                            'category': job_category,
+                            'description': job_desc
+                        })
+            
+            # Process button
+            st.markdown("### 🚀 Step 3: Process & Rank")
+            
+            if st.button("🎯 Match Resumes to Jobs", type="primary"):
+                if not job_descriptions:
+                    st.error("Please add at least one job description")
+                    return
                 
-                with col1:
-                    st.metric("Match Score", f"{score:.1%}")
-                    st.markdown(f"**Category:** {resume_data.get('Category', 'N/A')}")
-                    st.markdown(f"**Resume ID:** {resume_data.get('ID', resume_id)}")
-                
-                with col2:
-                    st.markdown("**Resume Text (Preview):**")
-                    preview_text = str(resume_data.get('cleaned_resume', str(resume_data.get('Resume_str', 'N/A'))))[:500] + "..."
-                    st.text_area("", preview_text, height=150, key=f"resume_{resume_id}")
+                with st.spinner("⏳ Processing and ranking resumes..."):
+                    try:
+                        results = self.process_gdrive_resumes(resumes, job_descriptions)
+                        st.session_state.processed_data = results
+                        st.success("✅ Processing complete! View results on the Dashboard.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        st.exception(e)
     
-    def render_analytics(self):
-        """Render analytics dashboard"""
-        st.markdown("## 📊 System Analytics")
+    def process_gdrive_resumes(self, resumes, job_descriptions):
+        """Process Google Drive resumes and rank against jobs"""
+        from module_2_text_preprocessing.preprocessing import clean_text, preprocess_text
+        from module_3_feature_extraction.tfidf import create_tfidf_vectors
+        from module_4_similarity_ranking.ranking import compute_hybrid_scores, rank_resumes
         
-        if self.rankings is None:
-            st.warning("⚠️ Analytics not available. Run the pipeline first.")
-            return
-        
-        # Overall statistics
-        st.markdown("### 📈 Overall Performance")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Mean Similarity", f"{self.rankings['Similarity_Score'].mean():.2%}")
-        with col2:
-            st.metric("Median Similarity", f"{self.rankings['Similarity_Score'].median():.2%}")
-        with col3:
-            st.metric("Max Similarity", f"{self.rankings['Similarity_Score'].max():.2%}")
-        
-        # Score distribution by job
-        st.markdown("### 📊 Score Distribution by Job")
-        
-        fig = px.box(
-            self.rankings,
-            x='Job',
-            y='Similarity_Score',
-            title='Similarity Score Distribution Across Jobs',
-            labels={'Similarity_Score': 'Similarity Score', 'Job': 'Job Description'}
-        )
-        st.plotly_chart(fig, width='stretch')
-        
-        # Top performers
-        st.markdown("### 🏆 Top Performing Resumes")
-        
-        # Get average score per resume
-        resume_avg_scores = self.rankings.groupby('Resume_ID')['Similarity_Score'].agg(['mean', 'max', 'count']).reset_index()
-        resume_avg_scores = resume_avg_scores.sort_values('mean', ascending=False).head(10)
-        
-        # Add category information
-        if self.raw_resumes is not None:
-            def get_category(x):
-                idx = int(x)
-                if self.raw_resumes is not None and idx < len(self.raw_resumes):
-                    return self.raw_resumes.iloc[idx].get('Category', 'N/A')
-                return 'N/A'
-            resume_avg_scores['Category'] = resume_avg_scores['Resume_ID'].apply(get_category)
-        else:
-            resume_avg_scores['Category'] = 'N/A'
-        
-        fig = px.bar(
-            resume_avg_scores,
-            x='Resume_ID',
-            y='mean',
-            title='Top 10 Resumes by Average Match Score',
-            labels={'mean': 'Average Score', 'Resume_ID': 'Resume ID'},
-            color='Category'
-        )
-        st.plotly_chart(fig, width='stretch')
-        
-        # Category analysis
-        if self.raw_resumes is not None and 'Category' in self.raw_resumes.columns:
-            st.markdown("### 📂 Performance by Resume Category")
-            
-            # Merge rankings with resume categories
-            rankings_with_cat = self.rankings.copy()
-            def get_category_rank(x):
-                idx = int(x)
-                if self.raw_resumes is not None and idx < len(self.raw_resumes):
-                    return self.raw_resumes.iloc[idx].get('Category', 'Unknown')
-                return 'Unknown'
-            rankings_with_cat['Category'] = rankings_with_cat['Resume_ID'].apply(get_category_rank)
-            
-            category_stats = rankings_with_cat.groupby('Category')['Similarity_Score'].agg(['mean', 'median', 'count']).reset_index()
-            category_stats = category_stats.sort_values('mean', ascending=False)
-            
-            fig = px.bar(
-                category_stats,
-                x='Category',
-                y='mean',
-                title='Average Similarity Score by Resume Category',
-                labels={'mean': 'Average Score', 'Category': 'Resume Category'},
-                color='mean',
-                color_continuous_scale='Blues'
-            )
-            st.plotly_chart(fig, width='stretch')
-    
-    def render_resume_explorer(self):
-        """Render resume explorer"""
-        st.markdown("## 📄 Resume Explorer")
-        
-        if self.raw_resumes is None or len(self.raw_resumes) == 0:
-            st.info("No resumes available. Use the Upload & Process page to add resumes.")
-            return
-        
-        # Resume selection
-        resume_id = st.number_input(
-            "Select Resume ID",
-            min_value=0,
-            max_value=len(self.raw_resumes) - 1,
-            value=0
+        # Create DataFrames
+        resumes_df = pd.DataFrame(resumes)
+        resumes_df['cleaned_text'] = resumes_df['text'].apply(clean_text)
+        resumes_df['preprocessed_text'] = resumes_df['cleaned_text'].apply(
+            lambda x: preprocess_text(x, use_nltk=False)
         )
         
-        resume_data = self.raw_resumes.iloc[resume_id]
+        jobs_df = pd.DataFrame(job_descriptions)
+        jobs_df['job_id'] = [f"JOB_{i+1}" for i in range(len(jobs_df))]
+        jobs_df['cleaned_text'] = jobs_df['description'].apply(clean_text)
+        jobs_df['preprocessed_text'] = jobs_df['cleaned_text'].apply(
+            lambda x: preprocess_text(x, use_nltk=False)
+        )
         
-        # Resume details
-        st.markdown("### 📋 Resume Details")
+        # Get text lists
+        resume_texts = resumes_df['preprocessed_text'].tolist()
+        job_texts = jobs_df['preprocessed_text'].tolist()
         
-        col1, col2, col3 = st.columns(3)
+        # TF-IDF
+        tfidf_result = create_tfidf_vectors(
+            resume_texts, job_texts,
+            max_features=5000, ngram_range=(1, 2), use_idf=False
+        )
         
-        with col1:
-            st.metric("Resume ID", resume_data.get('ID', resume_id))
-        with col2:
-            st.metric("Category", resume_data.get('Category', 'N/A'))
-        with col3:
-            is_valid = "✅ Valid" if resume_data.get('is_valid', True) else "❌ Invalid"
-            st.markdown(f"**Status:** {is_valid}")
+        # Compute scores
+        similarity_matrix = compute_hybrid_scores(
+            job_texts=job_texts,
+            resume_texts=resume_texts,
+            job_vectors=tfidf_result['jd_vectors'],
+            resume_vectors=tfidf_result['resume_vectors'],
+            keyword_weight=0.7,
+            tfidf_weight=0.3
+        )
         
-        # Resume text
-        st.markdown("### 📄 Resume Content")
+        # Rank
+        rankings_df = rank_resumes(
+            similarity_matrix=similarity_matrix,
+            top_n=min(10, len(resume_texts))
+        )
         
-        tab1, tab2, tab3 = st.tabs(["Original", "Cleaned", "Preprocessed"])
-        
-        with tab1:
-            st.text_area("Original Resume", resume_data.get('Resume_str', resume_data.get('cleaned_resume', 'N/A')), height=300)
-        
-        with tab2:
-            st.text_area("Cleaned Resume", resume_data.get('cleaned_resume', 'N/A'), height=300)
-        
-        with tab3:
-            if self.preprocessed_resumes is not None:
-                preprocessed = self.preprocessed_resumes.iloc[resume_id]['preprocessed_text']
-                st.text_area("Preprocessed Text", preprocessed, height=300)
-            else:
-                st.info("Run Module 2 to see preprocessed text")
-        
-        # Ranking performance
-        if self.rankings is not None:
-            st.markdown("### 🎯 Ranking Performance")
-            
-            resume_rankings = self.rankings[self.rankings['Resume_ID'] == resume_id]
-            
-            if len(resume_rankings) > 0:
-                # Performance metrics
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric("Best Match", f"{resume_rankings['Similarity_Score'].max():.2%}")
-                with col2:
-                    st.metric("Avg Match", f"{resume_rankings['Similarity_Score'].mean():.2%}")
-                with col3:
-                    best_rank = resume_rankings['Rank'].min()
-                    st.metric("Best Rank", f"#{int(best_rank)}")
-                
-                # Rankings table
-                st.markdown("**All Rankings:**")
-                display_rankings = resume_rankings[['Job', 'Rank', 'Similarity_Score']].copy()
-                display_rankings['Similarity_Score'] = display_rankings['Similarity_Score'].apply(lambda x: f"{x:.2%}")
-                st.dataframe(display_rankings, width='stretch')
-            else:
-                st.info("This resume has no rankings")
+        return {
+            'resumes': resumes_df,
+            'jobs': jobs_df,
+            'rankings': rankings_df,
+            'num_resumes': len(resumes_df),
+            'num_jobs': len(jobs_df)
+        }
     
     def render_upload(self):
         """Render upload and processing page"""
@@ -765,70 +664,48 @@ class CVSenseApp:
         CVSense is an automated resume screening system that uses Natural Language Processing (NLP) 
         and Machine Learning to match resumes with job descriptions.
         
-        #### 📊 System Pipeline
+        #### 📊 How It Works
         
-        1. **Module 1: Data Ingestion**
-           - Downloads resumes from Kaggle
-           - Extracts text from PDFs
-           - Validates data quality
+        1. **Import Resumes**
+           - Upload PDF/DOCX files directly, OR
+           - Import from Google Drive folder (perfect for Google Forms submissions!)
         
-        2. **Module 2: Text Preprocessing**
+        2. **Text Processing**
+           - Extracts text from documents
            - Cleans and normalizes text
-           - Tokenization and lemmatization
-           - Stopword removal
+           - Tokenization and preprocessing
         
-        3. **Module 3: Feature Extraction**
-           - TF-IDF vectorization
-           - Converts text to numerical features
-           - Creates consistent vocabulary
+        3. **Feature Extraction**
+           - TF-IDF vectorization with n-grams
+           - Keyword extraction with synonym matching
+           - Technical phrase detection
         
-        4. **Module 4: Similarity Ranking**
-           - Computes cosine similarity
-           - Ranks resumes by relevance
-           - Generates top candidates list
-        
-        5. **Module 5: Evaluation**
-           - Analyzes performance metrics
-           - Generates validation templates
-           - Creates visualizations
+        4. **Hybrid Matching**
+           - Keyword overlap scoring (like Jobscan)
+           - TF-IDF cosine similarity
+           - Phrase matching for technical terms
+           - Synonym/abbreviation expansion (ML ↔ machine learning)
         
         #### 🛠️ Technologies Used
         
         - **Python**: Core programming language
         - **scikit-learn**: TF-IDF vectorization, cosine similarity
         - **NLTK**: Natural language processing
-        - **pandas**: Data manipulation
+        - **gdown**: Google Drive integration
+        - **pdfplumber**: PDF text extraction
         - **Streamlit**: Web interface
         - **Plotly**: Interactive visualizations
         
-        #### 👥 Team
+        #### 💡 Use Case: Google Forms Job Applications
         
-        - **Module 1**: Data Ingestion & Resume Handling
-        - **Module 2**: Text Preprocessing
-        - **Module 3**: Feature Extraction (TF-IDF)
-        - **Module 4**: Similarity Computation & Ranking
-        - **Module 5**: Evaluation & Documentation
-        
-        #### 📝 Usage
-        
-        ```bash
-        # Run complete pipeline
-        python main.py
-        
-        # Launch web interface
-        streamlit run app.py
-        ```
-        
-        #### 📊 Dataset
-        
-        - **Source**: Kaggle Resume Dataset
-        - **Resumes**: 100 samples
-        - **Job Descriptions**: 10 curated positions
-        - **Categories**: Multiple tech roles
+        1. Create a Google Form with file upload for resumes
+        2. Form responses go to a Google Drive folder
+        3. Share the folder link
+        4. Paste link in CVSense → Instant ranking!
         
         ---
         
-        **Version**: 1.0.0  
+        **Version**: 2.0.0  
         **Project**: CVSense - Intelligent Resume Screening
         """)
 
@@ -837,20 +714,21 @@ def main():
     """Main application entry point"""
     app = CVSenseApp()
     
-    # Render sidebar and get selected page
-    page = app.render_sidebar()
+    # Check for navigation override
+    if 'nav_to' in st.session_state:
+        page = st.session_state.nav_to
+        del st.session_state.nav_to
+    else:
+        # Render sidebar and get selected page
+        page = app.render_sidebar()
     
     # Render selected page
     if page == "dashboard":
         app.render_dashboard()
     elif page == "upload":
         app.render_upload()
-    elif page == "job_search":
-        app.render_job_search()
-    elif page == "analytics":
-        app.render_analytics()
-    elif page == "resume_explorer":
-        app.render_resume_explorer()
+    elif page == "google_drive":
+        app.render_google_drive()
     elif page == "about":
         app.render_about()
 
